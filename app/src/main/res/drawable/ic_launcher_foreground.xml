@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <!-- Steam swirls -->
+    <path
+        android:strokeColor="#FFEFEA"
+        android:strokeWidth="20"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M186,146 Q216,116 246,146 Q276,176 306,146"/>
+
+    <!-- Bowl -->
+    <path
+        android:fillColor="#C73A07"
+        android:pathData="M156,256 C156,356 356,356 356,256 L376,256 C376,376 136,376 136,256 Z"/>
+
+    <!-- Chopsticks -->
+    <group
+        android:pivotX="256"
+        android:pivotY="256"
+        android:rotation="-20">
+        <path
+            android:fillColor="#4F403B"
+            android:pathData="M200,150h12v240h-12z"
+            android:strokeWidth="1"
+            android:strokeLineJoin="round"
+            android:strokeLineCap="round"/>
+        <path
+            android:fillColor="#362823"
+            android:pathData="M230,150h12v240h-12z"
+            android:strokeWidth="1"
+            android:strokeLineJoin="round"
+            android:strokeLineCap="round"/>
+    </group>
+
+    <!-- Rice/food in bowl -->
+    <path
+        android:fillColor="#FFFBF0"
+        android:pathData="M176,256 C176,326 336,326 336,256 Q256,296 176,256"/>
+
+</vector>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+
+    <!-- Primary 1 Colors -->
+    <color name="primary_color_1">#FF8A61</color>
+    <color name="primary_color_2">#FFCEBD</color>
+    <color name="primary_color_3">#FFEFEA</color>
+    <color name="primary_color_4">#FFAC8F</color>
+    <color name="primary_color_5">#FE6833</color>
+    <color name="primary_color_6">#C73A07</color>
+    <color name="primary_color_7">#8F2500</color>
+    <color name="primary_color_8">#611900</color>
+    <color name="primary_color_9">#300D00</color>
+
+    <!-- Primary 2 Colors -->
+    <color name="primary_2_color_1">#FFFBF0</color>
+    <color name="primary_2_color_2">#FFEBBA</color>
+    <color name="primary_2_color_3">#FFDE8F</color>
+    <color name="primary_2_color_4">#FACB5C</color>
+    <color name="primary_2_color_5">#F0BA3C</color>
+    <color name="primary_2_color_6">#C99418</color>
+    <color name="primary_2_color_7">#A17206</color>
+    <color name="primary_2_color_8">#6E4D00</color>
+    <color name="primary_2_color_9">#302200</color>
+
+    <!-- Neutral Colors -->
+    <color name="neutral_color_1">#F7F5F5</color>
+    <color name="neutral_color_2">#DAD5D3</color>
+    <color name="neutral_color_3">#B7B1AF</color>
+    <color name="neutral_color_4">#9C9491</color>
+    <color name="neutral_color_5">#7F7470</color>
+    <color name="neutral_color_6">#695B57</color>
+    <color name="neutral_color_7">#4F403B</color>
+    <color name="neutral_color_8">#362823</color>
+    <color name="neutral_color_9">#19100D</color>
+
+
+</resources>
