@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <!-- NavHostFragment is the container for navigation -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/nav_host_fragment"
         android:name="androidx.navigation.fragment.NavHostFragment"
@@ -13,5 +14,18 @@
         android:layout_height="match_parent"
         app:defaultNavHost="true"
         app:navGraph="@navigation/nav_graph" />
+
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/bottomNavigationFragment"
+        android:orientation="vertical">
+
+        <!-- Include the bottom navigation UI layout -->
+        <include
+            android:id="@+id/bottomNavigation"
+            layout="@layout/bottom_navigation" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

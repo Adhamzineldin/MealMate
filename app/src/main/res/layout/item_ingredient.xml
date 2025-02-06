@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="200dp"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    android:backgroundTint="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:gravity="center_horizontal">
+
+        <!-- Ingredient Image with fixed size -->
+        <ImageView
+            android:id="@+id/ivIngredient"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:scaleType="fitCenter"
+            tools:src="@drawable/meal_mate_icon" />
+
+        <!-- Ingredient Name (Bold, Bigger, and Forced Size) -->
+        <TextView
+            android:id="@+id/tvIngredientName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="@font/inter_regular"
+            android:textAlignment="center"
+            android:textColor="@color/mode"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:ellipsize="end"
+            android:singleLine="true"
+            tools:text="Tomato" />
+
+        <!-- Ingredient Weight (Smaller and Forced Size) -->
+        <TextView
+            android:id="@+id/tvGrams"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:fontFamily="@font/inter_regular"
+            android:textAlignment="center"
+            android:textColor="@color/neutral_color_6"
+            android:textSize="14sp"
+            android:gravity="center"
+            tools:text="150g" />
+
+        <!-- Add To List Button with adjusted size, yellow background, black bold text, and drawable -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddToList"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="8dp"
+            android:fontFamily="@font/inter_regular"
+            android:text="@string/add_to_list"
+            android:textAllCaps="false"
+            android:textSize="14sp"
+            android:textColor="@android:color/black"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:backgroundTint="@android:color/holo_orange_light"
+        android:drawableEnd="@drawable/description"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        app:cornerRadius="16dp"
+        app:strokeColor="@color/primary_color_5"
+        app:strokeWidth="1dp" />
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

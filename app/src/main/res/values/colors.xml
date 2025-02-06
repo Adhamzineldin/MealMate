@@ -3,6 +3,8 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
+    <color name="background">#FFFFFFFF</color>
+    <color name="mode">#FF000000</color>
 
     <!-- Primary 1 Colors -->
     <color name="primary_color_1">#FF8A61</color>
@@ -36,6 +38,14 @@
     <color name="neutral_color_7">#4F403B</color>
     <color name="neutral_color_8">#362823</color>
     <color name="neutral_color_9">#19100D</color>
+
+    <color name="coral_background">#FFE5E5</color>
+    <color name="coral_text">#FF6B4A</color>
+    <color name="divider_color">#EEEEEE</color>
+    <color name="link_color">#FF6B4A</color>
+
+    <color name="chip_background_color">#FF6200EE</color>  <!-- Change to your preferred color -->
+    <color name="chip_stroke_color">#FF3700B3</color>
 
 
 </resources>
