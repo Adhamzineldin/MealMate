@@ -1,3 +1,5 @@
+package com.maayn.mealmate.data.remote.api
+
 import com.maayn.mealmate.data.model.CategoryResponse
 import com.maayn.mealmate.data.model.IngredientResponse
 import com.maayn.mealmate.data.model.RecipeResponse

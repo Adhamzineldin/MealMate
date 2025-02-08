@@ -1,10 +1,10 @@
 package com.maayn.mealmate.presentation.home.model
 
 data class RecipeItem(
-    val idMeal: String,
+    val id: String,
     val name: String,
-    val duration: String,
+    val time: String,
     val rating: Float,
-    val image: String,
+    val imageUrl: String,
     val ratingCount: Int = 0
 )

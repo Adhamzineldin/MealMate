@@ -2,21 +2,21 @@ package com.maayn.mealmate.presentation.home
 
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
+import com.maayn.mealmate.data.local.database.AppDatabase
+import com.maayn.mealmate.data.local.entities.Meal
+import com.maayn.mealmate.data.local.entities.MealOfTheDay
 import com.maayn.mealmate.data.model.CategoryResponse
 import com.maayn.mealmate.data.model.IngredientResponse
 import com.maayn.mealmate.data.model.RecipeResponse
+import com.maayn.mealmate.data.remote.api.MealDBApiService
 import com.maayn.mealmate.databinding.FragmentHomeBinding
 import com.maayn.mealmate.presentation.home.adapters.RecipesAdapter
 import com.maayn.mealmate.presentation.home.model.CategoryItem
@@ -25,9 +25,13 @@ import com.maayn.mealmate.presentation.home.model.RecipeItem
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import com.maayn.mealmate.R
+import com.maayn.mealmate.data.remote.api.RetrofitClient
 import com.maayn.mealmate.presentation.home.adapters.CategoriesAdapter
 import com.maayn.mealmate.presentation.home.adapters.IngredientsAdapter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
 import kotlin.random.Random
 
 class HomeFragment : Fragment() {
@@ -83,40 +87,83 @@ class HomeFragment : Fragment() {
     }
 
     private fun fetchMealOfTheDay() {
-        // Make the API call to fetch the meal of the day (using a different endpoint)
-        apiService.getMealOfTheDay().enqueue(object : Callback<RecipeResponse> {
-            override fun onResponse(call: Call<RecipeResponse>, response: Response<RecipeResponse>) {
-                if (response.isSuccessful) {
-                    response.body()?.meals?.take(1)?.let { meals ->  // Only one meal to show
-                        meals.map { meal ->
-                            // Assuming we need to generate a similar structure as in the other function:
-                            val imageUrl = meal.strMealThumb  // Image URL for the meal
-                            val mealName = meal.strMeal  // Name of the meal
+        // Assume AppDatabase.getInstance(context) returns a singleton database instance
+        val db = AppDatabase.getInstance(requireContext())
+        val mealDao = db.mealDao()
+        val mealOfTheDayDao = db.mealOfTheDayDao()
+        val today = LocalDate.now().toString()
 
-                            // Generate random rating and time as an example (for a single meal)
-                            val randomRating = listOf(1, 2, 3, 4, 5, 1.5f, 2.5f, 3.5f, 4.5f, 5.0f).random().toFloat()
-                            val randomTime = Random.nextInt(10, 61)
-
-                            // Create a single item for the RecyclerView
-                            val mealItem = RecipeItem(meal.idMeal, mealName, "$randomTime minutes", randomRating, imageUrl)
-
-                            // Setting up the RecyclerView adapter
-                            binding.rvMealOfTheDay.apply {
-                                layoutManager = LinearLayoutManager(requireContext())
-                                adapter = RecipesAdapter(listOf(mealItem))
-                            }
-                        }
-                    }
-                } else {
-                    handleFailure("Error: ${response.code()} - ${response.message()}")
+        lifecycleScope.launch {
+            // Check if a meal of the day exists in Room for today
+            val storedMealOfTheDay = withContext(Dispatchers.IO) {
+                mealOfTheDayDao.getMealOfTheDay(today)
+            }
+            if (storedMealOfTheDay != null) {
+                val storedMeal = withContext(Dispatchers.IO) {
+                    mealDao.getMealById(storedMealOfTheDay.mealId)
+                }
+                if (storedMeal != null) {
+                    val randomRating = listOf(1, 2, 3, 4, 5, 1.5f, 2.5f, 3.5f, 4.5f, 5.0f).random().toFloat()
+                    val randomTime = Random.nextInt(10, 61)
+                    val recipeItem = RecipeItem(
+                        id = storedMeal.id,
+                        name = storedMeal.name,
+                        time = "$randomTime minutes",
+                        rating = randomRating,
+                        imageUrl = storedMeal.imageUrl,
+                    )
+                    binding.rvMealOfTheDay.layoutManager = LinearLayoutManager(requireContext())
+                    binding.rvMealOfTheDay.adapter = RecipesAdapter(listOf(recipeItem))
+                    return@launch
                 }
             }
-
-            override fun onFailure(call: Call<RecipeResponse>, t: Throwable) {
-                handleFailure("Failure: ${t.localizedMessage}")
-            }
-        })
+            // If no meal for today exists, fetch from the API
+            RetrofitClient.apiService.getMealOfTheDay().enqueue(object : Callback<RecipeResponse> {
+                override fun onResponse(call: Call<RecipeResponse>, response: Response<RecipeResponse>) {
+                    if (response.isSuccessful) {
+                        response.body()?.meals?.firstOrNull()?.let { apiMeal ->
+                            val mealEntity = Meal(
+                                id = apiMeal.idMeal,
+                                name = apiMeal.strMeal,
+                                imageUrl = apiMeal.strMealThumb,
+                                isFavorite = false,
+                                mealOfTheDay = true,
+                                country = "todo",
+                                ingredients = emptyList(),
+                                steps = emptyList(),
+                                videoUrl = "todo"
+                            )
+                            val randomRating = listOf(1, 2, 3, 4, 5, 1.5f, 2.5f, 3.5f, 4.5f, 5.0f).random().toFloat()
+                            val randomTime = Random.nextInt(10, 61)
+                            val recipeItem = RecipeItem(
+                                id = mealEntity.id,
+                                name = mealEntity.name,
+                                time = "$randomTime minutes",
+                                rating = randomRating,
+                                imageUrl = mealEntity.imageUrl
+                            )
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                mealDao.insertMeal(mealEntity)
+                                mealOfTheDayDao.setMealOfTheDay(MealOfTheDay(mealId = mealEntity.id, date = today))
+                            }
+                            binding.rvMealOfTheDay.post {
+                                binding.rvMealOfTheDay.layoutManager = LinearLayoutManager(requireContext())
+                                binding.rvMealOfTheDay.adapter = RecipesAdapter(listOf(recipeItem))
+                            }
+                        } ?: handleFailure("No meal data returned from API")
+                    } else {
+                        handleFailure("Error: ${response.code()} - ${response.message()}")
+                    }
+                }
+                override fun onFailure(call: Call<RecipeResponse>, t: Throwable) {
+                    handleFailure("Failure: ${t.localizedMessage}")
+                }
+            })
+        }
     }
+
+
+
 
 
 
@@ -132,7 +179,7 @@ class HomeFragment : Fragment() {
                         CategoryItem(it.strCategory, it.strCategoryThumb)
                     }
                     binding.rvCategories.apply {
-                        layoutManager = GridLayoutManager(requireContext(), 4)
+                        layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
                         adapter = CategoriesAdapter(categoryItems)
                     }
                 }
@@ -145,9 +192,10 @@ class HomeFragment : Fragment() {
     }
 
 
+
     private fun fetchTrendingRecipes() {
         // Fetch categories first
-        apiService.getMealCategories().enqueue(object : Callback<CategoryResponse> {
+        RetrofitClient.apiService.getMealCategories().enqueue(object : Callback<CategoryResponse> {
             override fun onResponse(call: Call<CategoryResponse>, response: Response<CategoryResponse>) {
                 if (response.isSuccessful) {
                     response.body()?.categories?.let { categories ->
@@ -170,7 +218,7 @@ class HomeFragment : Fragment() {
 
     private fun fetchRecipesForCategory(category: String) {
         // Make the API call to fetch recipes for the category (only passing category)
-        apiService.getMealsForCategory(category).enqueue(object : Callback<RecipeResponse> {
+        RetrofitClient.apiService.getMealsForCategory(category).enqueue(object : Callback<RecipeResponse> {
             override fun onResponse(call: Call<RecipeResponse>, response: Response<RecipeResponse>) {
                 if (response.isSuccessful) {
                     response.body()?.meals?.take(10)?.let { meals ->  // Limiting to max 10 items
@@ -208,7 +256,7 @@ class HomeFragment : Fragment() {
 
 
     private fun fetchPopularIngredients() {
-        apiService.getPopularIngredients().enqueue(object : Callback<IngredientResponse> {
+        RetrofitClient.apiService.getPopularIngredients().enqueue(object : Callback<IngredientResponse> {
             override fun onResponse(call: Call<IngredientResponse>, response: Response<IngredientResponse>) {
                 if (response.isSuccessful) {
                     response.body()?.meals?.take(10)?.let { ingredients ->  // Limiting to max 10 items
@@ -237,6 +285,6 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
+
     }
 }

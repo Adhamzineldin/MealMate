@@ -21,12 +21,12 @@ class RecipesAdapter(
             binding.apply {
                 // Load image using Glide
                 Glide.with(ivRecipe.context)
-                    .load(item.image) // The image URL or resource
+                    .load(item.imageUrl) // The image URL or resource
                     .placeholder(R.drawable.meal_mate_icon) // Optional placeholder
                     .into(ivRecipe)
 
                 tvRecipeName.text = item.name
-                tvRecipeDuration.text = item.duration
+                tvRecipeDuration.text = item.time
                 rbRecipeRating.rating = item.rating
                 tvRatingCount.text = "${item.ratingCount} ratings"  // Ensure ratingCount is set correctly
 

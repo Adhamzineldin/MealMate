@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.button.MaterialButton
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -14,6 +15,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.maayn.mealmate.R
+import com.maayn.mealmate.data.local.database.AppDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class ProfileFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
@@ -80,9 +84,16 @@ class ProfileFragment : Fragment() {
     }
 
     private fun signOut() {
+        val db = AppDatabase.getInstance(requireContext())
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            db.clearAllTables() // Clears all data from Room database
+        }
+
         auth.signOut()
         googleSignInClient.revokeAccess().addOnCompleteListener(requireActivity()) {
             findNavController().navigate(R.id.action_profileFragment_to_loginFragment)
         }
     }
+
 }

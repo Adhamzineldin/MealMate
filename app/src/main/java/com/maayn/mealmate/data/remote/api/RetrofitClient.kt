@@ -1,3 +1,6 @@
+package com.maayn.mealmate.data.remote.api
+
+import com.maayn.mealmate.data.remote.api.MealDBApiService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 

@@ -102,6 +102,8 @@ class MainActivity : AppCompatActivity() {
         val navController = navHostFragment.navController
         return navController.navigateUp() || super.onSupportNavigateUp()
     }
+
+    
     fun NavController.navigateSafely(destinationId: Int) {
         // Prevent navigation to the same destination
         if (currentDestination?.id != destinationId) {
