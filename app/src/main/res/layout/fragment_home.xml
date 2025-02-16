@@ -9,254 +9,284 @@
     android:fillViewport="true"
     android:paddingBottom="80dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="wrap_content">
 
-        <!-- Top Bar with Menu, Logo, and Notification -->
+        <!-- No Internet View -->
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/topBar"
+            android:id="@+id/noInternetView"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="16dp"
-            android:background="@color/background">
-
-            <ImageButton
-                android:id="@+id/btnMenu"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/menu"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:tint="@color/black" />
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
 
             <ImageView
-                android:id="@+id/ivLogo"
-                android:layout_width="120dp"
-                android:layout_height="40dp"
-                android:layout_marginTop="8dp"
-                android:src="@drawable/meal_mate_icon"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.498"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <ImageButton
-                android:id="@+id/btnNotification"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/notifications"
-                app:layout_constraintEnd_toEndOf="parent"
+                android:id="@+id/ivNoInternet"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:src="@drawable/no_internet"
+                android:scaleType="centerInside"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:tint="@color/black" />
-
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <FrameLayout
-            android:id="@+id/fragment_container"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
+        <!-- Main Content View -->
         <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/mainContentView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:layout_marginTop="24dp">
+            app:layout_constraintTop_toTopOf="parent">
 
-            <!-- Greeting Text -->
-            <TextView
-                android:id="@+id/tvGreeting"
-                android:layout_width="wrap_content"
+            <!-- Top Bar with Menu, Logo, and Notification -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/topBar"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter_regular"
-                android:textColor="@color/mode"
-                android:textSize="24sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:text="Hello Subash! 👋" />
+                android:padding="16dp"
+                android:background="@color/background"
+                app:layout_constraintTop_toTopOf="parent">
 
-            <TextView
-                android:id="@+id/tvCookingPrompt"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:fontFamily="@font/inter_bold"
-                android:text="Want to Cook some delicious Meals?"
-                android:textColor="@color/neutral_color_6"
-                android:textSize="16sp"
-                app:layout_constraintStart_toStartOf="@id/tvGreeting"
-                app:layout_constraintTop_toBottomOf="@id/tvGreeting" />
+                <ImageButton
+                    android:id="@+id/btnMenu"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/menu"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:tint="@color/black" />
 
-            <!-- Meal of the Day Section -->
-            <TextView
-                android:id="@+id/tvMealOfTheDay"
-                android:layout_width="wrap_content"
+                <ImageView
+                    android:id="@+id/ivLogo"
+                    android:layout_width="120dp"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="8dp"
+                    android:src="@drawable/meal_mate_icon"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.498"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageButton
+                    android:id="@+id/btnNotification"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/notifications"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:tint="@color/black" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <FrameLayout
+                android:id="@+id/fragment_container"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                app:layout_constraintTop_toBottomOf="@id/topBar" />
+
+            <!-- Content Section -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:layout_marginTop="24dp"
-                android:fontFamily="@font/inter_regular"
-                android:text="Meal of the Day"
-                android:textColor="@color/mode"
-                android:textSize="18sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvCookingPrompt" />
+                app:layout_constraintTop_toBottomOf="@id/fragment_container">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvMealOfTheDay"
-                android:layout_width="match_parent"
-                android:layout_height="270dp"
-                android:layout_marginTop="8dp"
-                android:clipToPadding="false"
-                android:paddingHorizontal="50dp"
-                app:layout_constraintTop_toBottomOf="@id/tvMealOfTheDay" />
+                <!-- Greeting Text -->
+                <TextView
+                    android:id="@+id/tvGreeting"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="@color/mode"
+                    android:textSize="24sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:text="Hello Subash! 👋" />
 
-            <!-- Categories Section -->
-            <TextView
-                android:id="@+id/tvCategoriesTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:fontFamily="@font/inter_bold"
-                android:text="Categories"
-                android:textColor="@color/mode"
-                android:textSize="18sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/rvMealOfTheDay" />
+                <TextView
+                    android:id="@+id/tvCookingPrompt"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:text="Want to Cook some delicious Meals?"
+                    android:textColor="@color/neutral_color_6"
+                    android:textSize="16sp"
+                    app:layout_constraintStart_toStartOf="@id/tvGreeting"
+                    app:layout_constraintTop_toBottomOf="@id/tvGreeting" />
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvCategories"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:clipToPadding="false"
-                android:paddingStart="0dp"
-                android:paddingEnd="8dp"
-                android:paddingVertical="8dp"
-                app:layout_constraintTop_toBottomOf="@id/tvCategoriesTitle" />
+                <!-- Meal of the Day Section -->
+                <TextView
+                    android:id="@+id/tvMealOfTheDay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="Meal of the Day"
+                    android:textColor="@color/mode"
+                    android:textSize="18sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvCookingPrompt" />
 
-            <!-- Upcoming Plans Section -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvMealOfTheDay"
+                    android:layout_width="match_parent"
+                    android:layout_height="270dp"
+                    android:layout_marginTop="8dp"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="50dp"
+                    app:layout_constraintTop_toBottomOf="@id/tvMealOfTheDay" />
 
-            <TextView
-                android:id="@+id/tvUpcomingPlansTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="64dp"
-                android:fontFamily="@font/inter_bold"
-                android:text="Upcoming Plans"
-                android:textColor="@color/mode"
-                android:textSize="18sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/rvCategories" />
+                <!-- Categories Section -->
+                <TextView
+                    android:id="@+id/tvCategoriesTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:text="Categories"
+                    android:textColor="@color/mode"
+                    android:textSize="18sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/rvMealOfTheDay" />
 
-            <TextView
-                android:id="@+id/tvUpcomingPlansViewAll"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/inter_regular"
-                android:text="View all"
-                android:textColor="@color/primary_color_5"
-                android:textSize="14sp"
-                app:layout_constraintBottom_toBottomOf="@id/tvUpcomingPlansTitle"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tvUpcomingPlansTitle" />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvCategories"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:clipToPadding="false"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="8dp"
+                    android:paddingVertical="8dp"
+                    app:layout_constraintTop_toBottomOf="@id/tvCategoriesTitle" />
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvUpcomingPlans"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:clipToPadding="false"
-                android:paddingHorizontal="0dp"
-                app:layout_constraintTop_toBottomOf="@id/tvUpcomingPlansTitle" />
+                <!-- Upcoming Plans Section -->
+                <TextView
+                    android:id="@+id/tvUpcomingPlansTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="64dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:text="Upcoming Plans"
+                    android:textColor="@color/mode"
+                    android:textSize="18sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/rvCategories" />
 
-            <TextView
-                android:id="@+id/tvNoUpcomingPlans"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="No upcoming Plans"
-                android:textColor="@color/mode"
-                android:textSize="16sp"
-                android:visibility="gone"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvUpcomingPlansTitle" />
+                <TextView
+                    android:id="@+id/tvUpcomingPlansViewAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="View all"
+                    android:textColor="@color/primary_color_5"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="@id/tvUpcomingPlansTitle"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tvUpcomingPlansTitle" />
 
-            <!-- Trending Recipes Section -->
-            <TextView
-                android:id="@+id/tvTrendingRecipesTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:fontFamily="@font/inter_bold"
-                android:text="Trending Recipes"
-                android:textColor="@color/mode"
-                android:textSize="18sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/rvUpcomingPlans" />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvUpcomingPlans"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="0dp"
+                    app:layout_constraintTop_toBottomOf="@id/tvUpcomingPlansTitle" />
 
-            <TextView
-                android:id="@+id/tvTrendingRecipesViewAll"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/inter_regular"
-                android:text="See more"
-                android:textColor="@color/primary_color_5"
-                android:textSize="14sp"
-                app:layout_constraintBottom_toBottomOf="@id/tvTrendingRecipesTitle"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tvTrendingRecipesTitle" />
+                <TextView
+                    android:id="@+id/tvNoUpcomingPlans"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No upcoming Plans"
+                    android:textColor="@color/mode"
+                    android:textSize="16sp"
+                    android:visibility="gone"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvUpcomingPlansTitle" />
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvTrendingRecipes"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:clipToPadding="false"
-                android:paddingHorizontal="0dp"
-                app:layout_constraintTop_toBottomOf="@id/tvTrendingRecipesTitle" />
+                <!-- Trending Recipes Section -->
+                <TextView
+                    android:id="@+id/tvTrendingRecipesTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:text="Trending Recipes"
+                    android:textColor="@color/mode"
+                    android:textSize="18sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/rvUpcomingPlans" />
 
-            <!-- Popular Ingredients Section -->
-            <TextView
-                android:id="@+id/tvPopularIngredientsTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:fontFamily="@font/inter_bold"
-                android:text="Popular Ingredients"
-                android:textColor="@color/mode"
-                android:textSize="18sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/rvTrendingRecipes" />
+                <TextView
+                    android:id="@+id/tvTrendingRecipesViewAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="See more"
+                    android:textColor="@color/primary_color_5"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="@id/tvTrendingRecipesTitle"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tvTrendingRecipesTitle" />
 
-            <TextView
-                android:id="@+id/tvPopularIngredientsViewAll"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/inter_regular"
-                android:text="See more"
-                android:textColor="@color/primary_color_5"
-                android:textSize="14sp"
-                app:layout_constraintBottom_toBottomOf="@id/tvPopularIngredientsTitle"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tvPopularIngredientsTitle" />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvTrendingRecipes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="0dp"
+                    app:layout_constraintTop_toBottomOf="@id/tvTrendingRecipesTitle" />
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvPopularIngredients"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:clipToPadding="false"
-                android:paddingHorizontal="0dp"
-                android:layout_marginBottom="16dp"
-                app:layout_constraintTop_toBottomOf="@id/tvPopularIngredientsTitle"
-                app:layout_constraintBottom_toBottomOf="parent" />
+                <!-- Popular Ingredients Section -->
+                <TextView
+                    android:id="@+id/tvPopularIngredientsTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:text="Popular Ingredients"
+                    android:textColor="@color/mode"
+                    android:textSize="18sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/rvTrendingRecipes" />
 
+                <TextView
+                    android:id="@+id/tvPopularIngredientsViewAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="See more"
+                    android:textColor="@color/primary_color_5"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="@id/tvPopularIngredientsTitle"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tvPopularIngredientsTitle" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvPopularIngredients"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="0dp"
+                    android:layout_marginBottom="16dp"
+                    app:layout_constraintTop_toBottomOf="@id/tvPopularIngredientsTitle"
+                    app:layout_constraintBottom_toBottomOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
-
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

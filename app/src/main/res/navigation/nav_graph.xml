@@ -72,4 +72,12 @@
             app:destination="@id/homeFragment" />
     </fragment>
 
+    <fragment
+        android:id="@+id/recipesFragment"
+        android:name="com.maayn.mealmate.presentation.recipes.RecipesFragment"
+        android:label="Recipes"
+        tools:layout="@layout/fragment_recipes">
+
+    </fragment>
+
 </navigation>

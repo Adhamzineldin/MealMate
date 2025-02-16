@@ -6,5 +6,6 @@ data class RecipeItem(
     val time: String,
     val rating: Float,
     val imageUrl: String,
-    val ratingCount: Int = 0
+    val ratingCount: Int = 0,
+    val category: String
 )

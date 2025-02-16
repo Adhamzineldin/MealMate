@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+
+    <!-- Wi-Fi waves (crossed out) -->
+    <path
+        android:pathData="M20 140 A200 200 0 0 1 220 140"
+        android:strokeColor="#CCCCCC"
+        android:strokeWidth="12"
+        android:strokeLineCap="round"/>
+
+    <path
+        android:pathData="M60 170 A140 140 0 0 1 180 170"
+        android:strokeColor="#CCCCCC"
+        android:strokeWidth="12"
+        android:strokeLineCap="round"/>
+
+    <path
+        android:pathData="M100 200 A80 80 0 0 1 140 200"
+        android:strokeColor="#CCCCCC"
+        android:strokeWidth="12"
+        android:strokeLineCap="round"/>
+
+    <!-- Device dot -->
+    <path
+        android:pathData="M120,220 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0"
+        android:fillColor="#666666"/>
+
+    <!-- Red cross -->
+    <path
+        android:pathData="M60 60 L180 180 M180 60 L60 180"
+        android:strokeColor="#FF4444"
+        android:strokeWidth="16"
+        android:strokeLineCap="round"/>
+
+</vector>

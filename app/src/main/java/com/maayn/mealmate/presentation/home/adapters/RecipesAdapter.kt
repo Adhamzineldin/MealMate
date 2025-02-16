@@ -5,11 +5,11 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.maayn.mealmate.databinding.ItemRecipeBinding
-import com.maayn.mealmate.presentation.home.model.*
+import com.maayn.mealmate.presentation.home.model.RecipeItem
 import com.maayn.mealmate.R
 
 class RecipesAdapter(
-    private val recipes: List<RecipeItem>,
+    private var recipes: List<RecipeItem>,
     private val onRecipeClick: (RecipeItem) -> Unit = {}
 ) : RecyclerView.Adapter<RecipesAdapter.RecipeViewHolder>() {
 
@@ -50,4 +50,10 @@ class RecipesAdapter(
     }
 
     override fun getItemCount(): Int = recipes.size
+
+    // New method to update data
+    fun updateData(newRecipes: List<RecipeItem>) {
+        recipes = newRecipes
+        notifyDataSetChanged()
+    }
 }

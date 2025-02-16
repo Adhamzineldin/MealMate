@@ -9,6 +9,8 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.maayn.mealmate.databinding.ActivityMainBinding
 
 
@@ -34,6 +36,15 @@ class MainActivity : AppCompatActivity() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
         bottomNav.setupWithNavController(navController)
 
+
+        val firestore = FirebaseFirestore.getInstance()
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setPersistenceEnabled(true)
+            .build()
+        firestore.firestoreSettings = settings
+
+
+
         // Handle navigation item selection
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
@@ -50,7 +61,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_recipes -> {
-//                    navController.navigate(R.id.recipesFragment)
+                    navController.navigate(R.id.recipesFragment)
                     true
                 }
                 R.id.nav_profile -> {

@@ -8,7 +8,7 @@ import com.maayn.mealmate.data.local.entities.Meal
 
 @Dao
 interface MealDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMeal(meal: Meal)
 
     @Query("SELECT * FROM meals")

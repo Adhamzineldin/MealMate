@@ -8,13 +8,18 @@ import com.maayn.mealmate.data.local.database.Converters
 @Entity(tableName = "meals")
 @TypeConverters(Converters::class)
 data class Meal(
-    @PrimaryKey val id: String,
-    val name: String,
-    val imageUrl: String,
-    val country: String,
-    val ingredients: List<String>, // Stores ingredients as a JSON string
-    val steps: List<String>,
-    val videoUrl: String,
+    @PrimaryKey
+    val id: String,
+    val name: String = "",
+    val imageUrl: String = "",
     val isFavorite: Boolean = false,
-    val mealOfTheDay: Boolean = false  // Added to track the "Meal of the Day"
-)
+    val mealOfTheDay: Boolean = false,
+    val country: String = "",
+    val ingredients: List<String> = emptyList(),
+    val steps: List<String> = emptyList(),
+    val videoUrl: String = ""
+) {
+    // Firestore needs a no-argument constructor
+    constructor() : this("", "", "", false, false, "", emptyList(), emptyList(), "")
+}
+
