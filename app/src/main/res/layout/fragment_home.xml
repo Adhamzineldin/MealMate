@@ -137,16 +137,18 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvCookingPrompt" />
 
+                <!-- Categories Section -->
+
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvMealOfTheDay"
                     android:layout_width="match_parent"
-                    android:layout_height="270dp"
-                    android:layout_marginTop="8dp"
+                    android:layout_height="300dp"
+                    android:layout_marginTop="44dp"
                     android:clipToPadding="false"
-                    android:paddingHorizontal="50dp"
+                    android:paddingHorizontal="0dp"
+                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvMealOfTheDay" />
 
-                <!-- Categories Section -->
                 <TextView
                     android:id="@+id/tvCategoriesTitle"
                     android:layout_width="wrap_content"

@@ -264,6 +264,7 @@ class HomeFragment : Fragment() {
             try {
                 // Fetch recipes for the category
                 val response = RetrofitClient.apiService.getMealsForCategory(category)
+                Log.i("HomeFragment", "Response: $response")
 
                 val recipeItems = response.meals.take(10).map { meal ->
                     val imageUrl = meal.strMealThumb  // Recipe image URL
@@ -276,7 +277,7 @@ class HomeFragment : Fragment() {
                         "$randomTime minutes",
                         randomRating,
                         imageUrl,
-                        category = meal.strCategory
+                        category = category
                     )
                 }
 
