@@ -102,43 +102,24 @@
         </androidx.cardview.widget.CardView>
 
         <!-- Categories Chips -->
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chipGroup"
+        <HorizontalScrollView
+            android:id="@+id/chipScrollView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:layout_marginHorizontal="16dp"
-            app:singleSelection="true"
-            app:selectionRequired="true"
-            app:layout_constraintTop_toBottomOf="@id/searchContainer">
+            app:layout_constraintTop_toBottomOf="@id/searchContainer"
+            android:scrollbars="none">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipAll"
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroup"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="All"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                android:checked="true" />
+                android:layout_marginHorizontal="16dp"
+                app:singleSelection="true"
+                app:selectionRequired="true"
+                app:chipSpacing="8dp"/>
 
-            <com.google.android.material.chip.Chip
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Breakfast"
-                style="@style/Widget.MaterialComponents.Chip.Choice" />
-
-            <com.google.android.material.chip.Chip
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Lunch"
-                style="@style/Widget.MaterialComponents.Chip.Choice" />
-
-            <com.google.android.material.chip.Chip
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Dinner"
-                style="@style/Widget.MaterialComponents.Chip.Choice" />
-        </com.google.android.material.chip.ChipGroup>
-
+        </HorizontalScrollView>
         <!-- Recipes RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvRecipes"
@@ -147,7 +128,7 @@
             android:layout_marginTop="16dp"
             android:layout_marginHorizontal="50dp"
             android:clipToPadding="false"
-            app:layout_constraintTop_toBottomOf="@id/chipGroup"
+            app:layout_constraintTop_toBottomOf="@id/chipScrollView"
             app:layout_constraintBottom_toBottomOf="parent" />
 
         <!-- Empty State -->
@@ -156,7 +137,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:visibility="gone"
-            app:layout_constraintTop_toBottomOf="@id/chipGroup"
+            app:layout_constraintTop_toBottomOf="@id/chipScrollView"
             app:layout_constraintBottom_toBottomOf="parent">
 
             <ImageView
