@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
@@ -38,6 +39,7 @@ class HomeFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
     private val apiService = RetrofitClient.apiService
     private lateinit var networkMonitor: NetworkMonitor
+    private lateinit var viewModel: HomeViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -114,105 +116,18 @@ class HomeFragment : Fragment() {
     }
 
     private fun fetchMealOfTheDay() {
-        val db = AppDatabase.getInstance(requireContext())
-        val mealDao = db.mealDao()
-        val mealOfTheDayDao = db.mealOfTheDayDao()
-        val today = LocalDate.now().toString()
-        val firestore = FirebaseFirestore.getInstance()
+        viewModel = ViewModelProvider(this)[HomeViewModel::class.java]
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                // Step 1: Check Room database first
-                val storedMealOfTheDay = withContext(Dispatchers.IO) {
-                    mealOfTheDayDao.getMealOfTheDay(today)
-                }
-
-                val localMeal = storedMealOfTheDay?.let {
-                    withContext(Dispatchers.IO) {
-                        mealDao.getMealById(it.mealId)
-                    }
-                }
-
-                val meal = localMeal ?: run {
-                    // Step 2: If not found in Room, check Firebase
-                    val firebaseMealSnapshot = try {
-                        withContext(Dispatchers.IO) {
-                            firestore.collection("mealOfTheDay").document(today).get().await()
-                        }
-                    } catch (e: Exception) {
-                        Log.e("fetchMealOfTheDay", "Firebase fetch failed: ${e.localizedMessage}")
-                        null
-                    }
-
-                    val firebaseMeal = if (firebaseMealSnapshot != null && firebaseMealSnapshot.exists()) {
-                        firebaseMealSnapshot.toObject(Meal::class.java)?.also { mealData ->
-                            withContext(Dispatchers.IO) {
-                                mealDao.insertMeal(mealData)
-                                mealOfTheDayDao.setMealOfTheDay(MealOfTheDay(mealId = mealData.id, date = today))
-                            }
-                        }
-                    } else {
-                        null
-                    }
-
-                    firebaseMeal ?: run {
-                        // Step 3: If not found in Firebase, fetch from API
-                        val response = withContext(Dispatchers.IO) {
-                            RetrofitClient.apiService.getMealOfTheDay()
-                        }
-
-                        val apiMeal = response.meals?.firstOrNull()
-                            ?: throw Exception("No meal data returned from API")
-
-                        val mealEntity = Meal(
-                            id = apiMeal.idMeal,
-                            name = apiMeal.strMeal,
-                            imageUrl = apiMeal.strMealThumb,
-                            isFavorite = false,
-                            mealOfTheDay = true,
-                            country = "todo",
-                            ingredients = emptyList(),
-                            steps = emptyList(),
-                            videoUrl = "todo"
-                        )
-
-                        // Step 4: Store meal in Firebase and Room
-                        withContext(Dispatchers.IO) {
-                            try {
-                                firestore.collection("mealOfTheDay").document(today).set(mealEntity).await()
-                            } catch (e: Exception) {
-                                Log.e("fetchMealOfTheDay", "Firebase write failed: ${e.localizedMessage}")
-                            }
-                            mealDao.insertMeal(mealEntity)
-                            mealOfTheDayDao.setMealOfTheDay(MealOfTheDay(mealId = mealEntity.id, date = today))
-                        }
-                        mealEntity
-                    }
-                }
-
-                // Step 5: Update UI on main thread
-                meal.let {
-                    val randomRating = listOf(1, 2, 3, 4, 5, 1.5f, 2.5f, 3.5f, 4.5f, 5.0f).random().toFloat()
-                    val randomTime = Random.nextInt(10, 61)
-                    val recipeItem = RecipeItem(
-                        id = it.id,
-                        name = it.name,
-                        time = "$randomTime minutes",
-                        rating = randomRating,
-                        imageUrl = it.imageUrl,
-                        category = "todo"
-                    )
-
-                    withContext(Dispatchers.Main) {
-                        binding.rvMealOfTheDay.layoutManager = LinearLayoutManager(requireContext())
-                        binding.rvMealOfTheDay.adapter = RecipesAdapter(listOf(recipeItem))
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("HomeFragment", "Error: ${e.message}")
-                handleFailure("Failure: ${e.localizedMessage}")
+        // Observe LiveData
+        viewModel.mealOfTheDay.observe(viewLifecycleOwner) { meal ->
+            meal?.let {
+                binding.rvMealOfTheDay.layoutManager = LinearLayoutManager(requireContext())
+                binding.rvMealOfTheDay.adapter = RecipesAdapter(listOf(it))
             }
         }
+
+        // Fetch data
+        viewModel.fetchMealOfTheDay()
     }
 
 

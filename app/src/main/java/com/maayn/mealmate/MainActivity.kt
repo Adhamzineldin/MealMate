@@ -2,6 +2,7 @@ package com.maayn.mealmate
 
 
 import android.os.Bundle
+import android.os.StrictMode
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
