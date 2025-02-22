@@ -1,31 +1,44 @@
 package com.maayn.mealmate.presentation.recipes
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.chip.Chip
 import com.maayn.mealmate.core.utils.NetworkMonitor
+import com.maayn.mealmate.data.model.Category
 import com.maayn.mealmate.data.remote.api.RetrofitClient
 import com.maayn.mealmate.databinding.FragmentRecipesBinding
 import com.maayn.mealmate.presentation.home.adapters.RecipesAdapter
 import com.maayn.mealmate.presentation.home.model.RecipeItem
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class RecipesFragment : Fragment() {
     private var _binding: FragmentRecipesBinding? = null
-    private val binding get() = _binding ?: throw IllegalStateException("View binding is null")
+    private val binding get() = _binding!!
     private lateinit var networkMonitor: NetworkMonitor
     private val recipesAdapter by lazy { RecipesAdapter(emptyList()) }
+
+    // State management
     private var searchJob: Job? = null
-    private var allRecipes: List<RecipeItem> = emptyList()
-    private var currentCategory: String = "All"
+    private val currentCategory = MutableStateFlow("All")
+    private val searchQuery = MutableStateFlow("")
+    private var allRecipes = emptyList<RecipeItem>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -40,152 +53,156 @@ class RecipesFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupNetworkMonitor()
         setupUI()
+        setupObservers()
         setupListeners()
     }
 
     private fun setupNetworkMonitor() {
         networkMonitor = NetworkMonitor(requireContext()) { isConnected ->
-            requireActivity().runOnUiThread {
-                if (isConnected) {
-                    showMainContent()
-                    fetchRecipes()
-                } else {
-                    showEmptyState("No Internet Connection", showError = true)
-                }
-            }
+            binding.emptyState.isVisible = !isConnected
+            if (isConnected && allRecipes.isEmpty()) fetchRecipes()
         }
         networkMonitor.register()
     }
 
     private fun setupUI() {
-        setupRecyclerView()
-        setupSearch()
-        setupChips()
-    }
-
-    private fun setupRecyclerView() {
         binding.rvRecipes.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = recipesAdapter
         }
     }
 
-    private fun setupSearch() {
-        binding.etSearch.addTextChangedListener { editable ->
-            searchJob?.cancel()
-            searchJob = lifecycleScope.launch {
-                delay(300) // Debounce search
-                editable?.toString()?.let { searchText ->
-                    filterRecipes(searchText)
-                }
-            }
+    private fun setupObservers() {
+        lifecycleScope.launch {
+            currentCategory.collectLatest { updateRecipes() }
         }
-    }
 
-    private fun setupChips() {
-        binding.chipGroup.setOnCheckedStateChangeListener { group, checkedIds ->
-            if (checkedIds.isNotEmpty()) {
-                val chip = group.findViewById<Chip>(checkedIds.first())
-                currentCategory = chip.text.toString()
-                filterRecipes(binding.etSearch.text.toString())
+        lifecycleScope.launch {
+            searchQuery.collectLatest { query ->
+                delay(300) // Debounce
+                updateRecipes(query)
             }
         }
     }
 
     private fun setupListeners() {
-        binding.btnBack.setOnClickListener {
-            requireActivity().onBackPressed()
-        }
-
-        binding.btnFilter.setOnClickListener {
-            // Implement filter dialog here
-            Toast.makeText(context, "Filter feature coming soon!", Toast.LENGTH_SHORT).show()
+        binding.apply {
+            btnBack.setOnClickListener { activity?.onBackPressed() }
+            btnFilter.setOnClickListener { showFilterComingSoon() }
+            etSearch.addTextChangedListener { text ->
+                searchQuery.value = text?.toString()?.trim() ?: ""
+            }
         }
     }
 
     private fun fetchRecipes() {
         lifecycleScope.launch {
             try {
-                val categories = RetrofitClient.apiService.getMealCategories()
-                val allRecipeItems = mutableListOf<RecipeItem>()
-
-                val recipeDeferredList = categories.categories.map { category ->
-                    async {
-                        try {
-                            val response = RetrofitClient.apiService.getMealsForCategory(category.strCategory)
-                            response.meals.map { meal ->
-                                val randomRating = listOf(1, 2, 3, 4, 5, 1.5f, 2.5f, 3.5f, 4.5f, 5.0f).random().toFloat()
-                                val randomTime = Random.nextInt(10, 61)
-                                RecipeItem(
-                                    id = meal.idMeal,
-                                    name = meal.strMeal,
-                                    time = "$randomTime minutes",
-                                    rating = randomRating,
-                                    imageUrl = meal.strMealThumb,
-                                    category = category.strCategory
-                                )
-                            }
-                        } catch (e: Exception) {
-                            // Log error but continue with other categories
-                            e.printStackTrace()
-                            emptyList<RecipeItem>()
-                        }
-                    }
-                }
-
-                allRecipeItems.addAll(recipeDeferredList.awaitAll().flatten().shuffled())
-                updateRecipesList(allRecipeItems)
-
+                showLoading()
+                val categories = RetrofitClient.apiService.getMealCategories().categories
+                setupCategoryChips(categories)
+                allRecipes = fetchAllRecipes(categories)
+                updateRecipes()
             } catch (e: Exception) {
-                showEmptyState("Failed to load recipes", showError = true)
+                showError("Failed to load recipes: ${e.message}")
+            } finally {
+                hideLoading()
             }
         }
     }
 
-    private fun filterRecipes(searchQuery: String) {
-        var filteredList = allRecipes
-
-        // Apply category filter
-        if (currentCategory != "All") {
-            filteredList = filteredList.filter { it.category == currentCategory }
-        }
-
-        // Apply search filter
-        if (searchQuery.isNotEmpty()) {
-            filteredList = filteredList.filter {
-                it.name.contains(searchQuery, ignoreCase = true)
+    private suspend fun fetchAllRecipes(categories: List<Category>): List<RecipeItem> {
+        return try {
+            coroutineScope {
+                categories.map { category ->
+                    async {
+                        fetchRecipesForCategory(category)
+                    }
+                }.awaitAll().flatten().shuffled()
             }
-        }
-
-        updateRecipesList(filteredList)
-    }
-
-    private fun updateRecipesList(recipes: List<RecipeItem>) {
-        if (recipes.isEmpty()) {
-            showEmptyState("No recipes found")
-        } else {
-            showMainContent()
-            recipesAdapter.updateData(recipes)
+        } catch (e: Exception) {
+            Log.e("fetchAllRecipes", "Error fetching recipes", e)
+            emptyList()
         }
     }
 
-    private fun showEmptyState(message: String, showError: Boolean = false) {
-        binding.rvRecipes.visibility = View.GONE
-        binding.emptyState.visibility = View.VISIBLE
-//        binding.emptyStateMessage.text = message
-
-        if (showError) {
-            Toast.makeText(context, "Error: $message", Toast.LENGTH_LONG).show()
+    private suspend fun fetchRecipesForCategory(category: Category): List<RecipeItem> {
+        return try {
+            RetrofitClient.apiService.getMealsForCategory(category.strCategory).meals.map { meal ->
+                RecipeItem(
+                    id = meal.idMeal,
+                    name = meal.strMeal,
+                    time = "${Random.nextInt(10, 61)} minutes",
+                    rating = listOf(1f, 1.5f, 2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f).random(),
+                    imageUrl = meal.strMealThumb,
+                    category = category.strCategory
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("fetchRecipesForCategory", "Error fetching category ${category.strCategory}", e)
+            emptyList()
         }
     }
 
-    private fun showMainContent() {
-        binding.rvRecipes.visibility = View.VISIBLE
-        binding.emptyState.visibility = View.GONE
+
+    private fun setupCategoryChips(categories: List<Category>) {
+        binding.chipGroup.removeAllViews()
+        addChip("All", isSelected = true)
+        categories.forEach { addChip(it.strCategory, isSelected = false) }
+    }
+
+    private fun addChip(label: String, isSelected: Boolean) {
+        Chip(requireContext()).apply {
+            text = label
+            isCheckable = true
+            isChecked = isSelected
+            setOnCheckedChangeListener { _, checked ->
+                if (checked) currentCategory.value = label
+            }
+            binding.chipGroup.addView(this)
+        }
+    }
+
+    private fun updateRecipes(query: String = searchQuery.value) {
+        val filtered = allRecipes
+            .filter { it.category == currentCategory.value || currentCategory.value == "All" }
+            .filter { it.name.contains(query, true) }
+
+        if (filtered.isEmpty()) showEmptyState() else showRecipes(filtered)
+    }
+
+    private fun showLoading() {
+//        binding.progressBar.isVisible = true
+        binding.rvRecipes.isVisible = false
+    }
+
+    private fun hideLoading() {
+//        binding.progressBar.isVisible = false
+    }
+
+    private fun showRecipes(recipes: List<RecipeItem>) {
+        binding.rvRecipes.isVisible = true
+        binding.emptyState.isVisible = false
+        recipesAdapter.updateData(recipes)
+    }
+
+    private fun showEmptyState() {
+        binding.rvRecipes.isVisible = false
+        binding.emptyState.isVisible = true
+    }
+
+    private fun showError(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        showEmptyState()
+    }
+
+    private fun showFilterComingSoon() {
+        Toast.makeText(context, "Filter feature coming soon!", Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         networkMonitor.unregister()
+        _binding = null
     }
 }

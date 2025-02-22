@@ -53,6 +53,8 @@ class HomeFragment : Fragment() {
 
         setupNetworkMonitor()
         setupUI()
+
+
     }
 
     private fun setupNetworkMonitor() {
@@ -70,12 +72,13 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupUI() {
+        fetchMealOfTheDay()
         setupGreeting()
         fetchCategories()
         fetchTrendingRecipes()
         fetchPopularIngredients()
         fetchUpcomingPlans()
-        fetchMealOfTheDay()
+
     }
 
     private fun showNoInternetView() {
@@ -188,7 +191,7 @@ class HomeFragment : Fragment() {
                 }
 
                 // Step 5: Update UI on main thread
-                meal?.let {
+                meal.let {
                     val randomRating = listOf(1, 2, 3, 4, 5, 1.5f, 2.5f, 3.5f, 4.5f, 5.0f).random().toFloat()
                     val randomTime = Random.nextInt(10, 61)
                     val recipeItem = RecipeItem(
@@ -290,7 +293,8 @@ class HomeFragment : Fragment() {
 
 
     private fun handleFailure(message: String) {
-        Toast.makeText(requireContext(), "No Internet Connection", Toast.LENGTH_LONG).show()
+        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+        Log.e("Toast", message)
     }
 
 
