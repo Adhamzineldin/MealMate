@@ -7,5 +7,6 @@ data class RecipeItem(
     val rating: Float,
     val imageUrl: String,
     val ratingCount: Int = 0,
-    val category: String
+    val category: String,
+    var isFavorited: Boolean  = false
 )

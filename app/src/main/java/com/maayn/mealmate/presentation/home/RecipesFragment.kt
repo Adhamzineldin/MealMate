@@ -21,6 +21,7 @@ import com.maayn.mealmate.data.model.Category
 import com.maayn.mealmate.data.remote.api.RetrofitClient
 import com.maayn.mealmate.databinding.FragmentRecipesBinding
 import com.maayn.mealmate.databinding.ItemRecipeBinding
+import com.maayn.mealmate.presentation.home.adapters.RecipesAdapter
 import com.maayn.mealmate.presentation.home.model.RecipeItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -50,27 +51,7 @@ class RecipesFragment : Fragment() {
     private val semaphore = Semaphore(5) // Limit concurrent network requests
 
     // Adapter using ListAdapter with DiffUtil
-    private val recipesAdapter by lazy {
-        RecipesAdapter { showRecipeDetails(it) }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        StrictMode.setThreadPolicy(
-            StrictMode.ThreadPolicy.Builder()
-                .detectAll()  // Detect everything, including slow calls
-                .penaltyLog()  // Log violations in Logcat
-                .penaltyDeath() // Crash the app to pinpoint issues (optional)
-                .build()
-        )
-        StrictMode.setVmPolicy(
-            StrictMode.VmPolicy.Builder()
-                .detectLeakedClosableObjects()  // Detect unclosed resources
-                .detectLeakedSqlLiteObjects()  // Detect leaked DB objects
-                .penaltyLog()
-                .build()
-        )
-    }
+    val recipesAdapter = RecipesAdapter()
 
 
     override fun onCreateView(
@@ -90,6 +71,9 @@ class RecipesFragment : Fragment() {
         setupListeners()
     }
 
+
+
+
     private fun setupNetworkMonitor() {
         networkMonitor = NetworkMonitor(requireContext()) { isConnected ->
             binding.emptyState.isVisible = !isConnected
@@ -99,6 +83,10 @@ class RecipesFragment : Fragment() {
     }
 
     private fun setupUI() {
+
+
+
+
         binding.rvRecipes.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = recipesAdapter
@@ -133,6 +121,8 @@ class RecipesFragment : Fragment() {
             }
         }
     }
+
+
 
     private fun fetchRecipes() {
         lifecycleScope.launch(Dispatchers.IO) {
@@ -235,7 +225,7 @@ class RecipesFragment : Fragment() {
     private fun showRecipes(recipes: List<RecipeItem>) {
         binding.rvRecipes.isVisible = true
         binding.emptyState.isVisible = false
-        recipesAdapter.submitList(recipes)
+        recipesAdapter.updateData(recipes)
     }
 
     private fun showEmptyState() {
@@ -262,49 +252,4 @@ class RecipesFragment : Fragment() {
 
     }
 
-    // Optimized Adapter with DiffUtil
-    class RecipesAdapter(
-        private val onClick: (RecipeItem) -> Unit
-    ) : ListAdapter<RecipeItem, RecipesAdapter.ViewHolder>(RecipeDiffCallback()) {
-
-        inner class ViewHolder(val binding: ItemRecipeBinding) : RecyclerView.ViewHolder(binding.root) {
-            init {
-                binding.root.setOnClickListener {
-                    onClick(getItem(adapterPosition))
-                }
-            }
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val binding = ItemRecipeBinding.inflate(
-                LayoutInflater.from(parent.context),
-                parent,
-                false
-            )
-            return ViewHolder(binding)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = getItem(position)
-            with(holder.binding) {
-                tvRecipeName.text = item.name
-                tvRecipeDuration.text = item.time
-//                tvRatingCount = item.rating
-                // Load image using Glide into the ImageView (ivRecipe)
-                Glide.with(ivRecipe.context)
-                    .load(item.imageUrl)
-                    .into(ivRecipe)
-            }
-        }
-
-        class RecipeDiffCallback : DiffUtil.ItemCallback<RecipeItem>() {
-            override fun areItemsTheSame(oldItem: RecipeItem, newItem: RecipeItem): Boolean {
-                return oldItem.id == newItem.id
-            }
-
-            override fun areContentsTheSame(oldItem: RecipeItem, newItem: RecipeItem): Boolean {
-                return oldItem == newItem
-            }
-        }
-    }
 }

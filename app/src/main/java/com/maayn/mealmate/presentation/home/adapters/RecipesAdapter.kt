@@ -1,7 +1,10 @@
 package com.maayn.mealmate.presentation.home.adapters
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.maayn.mealmate.databinding.ItemRecipeBinding
@@ -9,9 +12,12 @@ import com.maayn.mealmate.presentation.home.model.RecipeItem
 import com.maayn.mealmate.R
 
 class RecipesAdapter(
-    private var recipes: List<RecipeItem>,
-    private val onRecipeClick: (RecipeItem) -> Unit = {}
-) : RecyclerView.Adapter<RecipesAdapter.RecipeViewHolder>() {
+    private var recipes: List<RecipeItem> = emptyList(),
+) : ListAdapter<RecipeItem, RecipesAdapter.RecipeViewHolder>(RecipeDiffCallback()) {
+
+    init {
+        submitList(ArrayList(recipes)) // Ensure list cloning to trigger UI updates
+    }
 
     inner class RecipeViewHolder(
         private val binding: ItemRecipeBinding
@@ -19,41 +25,87 @@ class RecipesAdapter(
 
         fun bind(item: RecipeItem) {
             binding.apply {
-                // Load image using Glide
                 Glide.with(ivRecipe.context)
-                    .load(item.imageUrl) // The image URL or resource
-                    .placeholder(R.drawable.meal_mate_icon) // Optional placeholder
+                    .load(item.imageUrl)
+                    .placeholder(R.drawable.meal_mate_icon)
                     .into(ivRecipe)
 
                 tvRecipeName.text = item.name
                 tvRecipeDuration.text = item.time
                 rbRecipeRating.rating = item.rating
-                tvRatingCount.text = "${item.ratingCount} ratings"  // Ensure ratingCount is set correctly
+                tvRatingCount.text = "${item.ratingCount} ratings"
+
+                // Set heart icon based on `isFavorited`
+                updateFavoriteIcon(item.isFavorited)
+
+                // Handle heart click
+                ivFavorite.setOnClickListener {
+                    val updatedItem = item.copy(isFavorited = !item.isFavorited) // Toggle state
+                    updateFavoriteInDatabase(updatedItem) // 🔥 Save to database
+                    updateItem(updatedItem) // 🔥 Force UI update
+                }
+
+                btnCreateMealPlan.setOnClickListener {
+                    onCreateMealPlanButtonClick(item)
+                }
 
                 root.setOnClickListener { onRecipeClick(item) }
             }
+        }
+        private fun onCreateMealPlanButtonClick(item: RecipeItem) {
+            Log.e("click", "onCreateMealPlanButtonClick:")
+        }
+
+        private fun onRecipeClick(item: RecipeItem) {
+            Log.e("click", "onRecipeClick:")
+
+        }
+
+        private fun updateFavoriteInDatabase(updatedItem: RecipeItem) {
+            Log.e("click", "updateFavoriteInDatabase:")
+
+        }
+
+        private fun updateFavoriteIcon(isFavorited: Boolean) {
+            binding.ivFavorite.setImageResource(
+                if (isFavorited) R.drawable.ic_heart_filled
+                else R.drawable.ic_favorite_border
+            )
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecipeViewHolder {
         return RecipeViewHolder(
-            ItemRecipeBinding.inflate(
-                LayoutInflater.from(parent.context),
-                parent,
-                false
-            )
+            ItemRecipeBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         )
     }
 
     override fun onBindViewHolder(holder: RecipeViewHolder, position: Int) {
-        holder.bind(recipes[position])
+        holder.bind(getItem(position))
     }
 
-    override fun getItemCount(): Int = recipes.size
+    // 🔥 Force UI update for the toggled item
+    private fun updateItem(updatedItem: RecipeItem) {
+        val newList = currentList.toMutableList() // Clone list
+        val index = newList.indexOfFirst { it.id == updatedItem.id }
+        if (index != -1) {
+            newList[index] = updatedItem // Replace item
+            submitList(newList) // Update RecyclerView
+        }
+    }
 
-    // New method to update data
     fun updateData(newRecipes: List<RecipeItem>) {
-        recipes = newRecipes
-        notifyDataSetChanged()
+        recipes = ArrayList(newRecipes) // Clone list before submitting
+        submitList(recipes)
+    }
+}
+
+class RecipeDiffCallback : DiffUtil.ItemCallback<RecipeItem>() {
+    override fun areItemsTheSame(oldItem: RecipeItem, newItem: RecipeItem): Boolean {
+        return oldItem.id == newItem.id // Compare unique IDs
+    }
+
+    override fun areContentsTheSame(oldItem: RecipeItem, newItem: RecipeItem): Boolean {
+        return oldItem == newItem // Compare data fields
     }
 }
