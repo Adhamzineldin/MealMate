@@ -35,7 +35,7 @@ fun RecipeItem.toMealWithDetails(): MealWithDetails {
     )
 
     val ingredientEntities = this.ingredients.map { IngredientEntity(it.name, it.measure, this.id) }
-    val instructionEntities = this.instructions.map { InstructionEntity(mealId = this.id, step = it.step.toInt(), description = it.step) }
+    val instructionEntities = this.instructions.map { InstructionEntity(mealId = this.id, step = it.step, description = it.step) }
 
     return MealWithDetails(
         meal = meal,

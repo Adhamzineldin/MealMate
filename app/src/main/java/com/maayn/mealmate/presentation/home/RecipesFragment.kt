@@ -1,6 +1,7 @@
 package com.maayn.mealmate.presentation.home
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -86,9 +87,6 @@ class RecipesFragment : Fragment() {
 
     private fun setupUI() {
 
-
-
-
         binding.rvRecipes.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = recipesAdapter
@@ -135,6 +133,8 @@ class RecipesFragment : Fragment() {
 
                 val recipes = fetchAllRecipes(categories)
 
+                Log.e("RecipesFragment", "Recipes: $recipes")
+
                 withContext(Dispatchers.Main) {
                     allRecipes = recipes
                     setupCategoryChips(categories)
@@ -153,7 +153,10 @@ class RecipesFragment : Fragment() {
     private suspend fun fetchAllRecipes(categories: List<Category>): List<RecipeItem> {
         return coroutineScope {
             categories.map { category ->
-                async(Dispatchers.IO) { fetchRecipesForCategory(category) }
+                async(Dispatchers.IO) {
+                    fetchRecipesForCategory(category)
+                }
+
             }.awaitAll().flatten().shuffled()
         }
     }
@@ -164,9 +167,8 @@ class RecipesFragment : Fragment() {
             semaphore.withPermit {
                 val mealsWithDetails = withContext(Dispatchers.IO) {
                     RetrofitClient.apiService.getMealsForCategory(category.strCategory).meals?.mapNotNull { mealDto ->
-                        val detailsResponse = RetrofitClient.apiService.getMealsForCategory(mealDto.id)
+                        val detailsResponse = RetrofitClient.apiService.getMealDetails(mealDto.id)
                         val mealDetails = detailsResponse.meals?.firstOrNull() ?: return@mapNotNull null
-
                         // Convert API response to Room entities
                         val mealEntity = Meal(
                             id = mealDetails.id,
@@ -181,7 +183,7 @@ class RecipesFragment : Fragment() {
                         )
 
                         val ingredients = mealDetails.extractIngredients().map { IngredientEntity(mealId = mealEntity.id, name = it.name, measure = it.measure) }
-                        val instructions = mealDetails.extractInstructions().map { InstructionEntity(mealId = mealEntity.id, step = it.step.toInt(), description = it.step) }
+                        val instructions = mealDetails.extractInstructions().map { InstructionEntity(mealId = mealEntity.id, step = it.step, description = it.step) }
 
                         MealWithDetails(meal = mealEntity, ingredients = ingredients, instructions = instructions)
                     }
@@ -189,7 +191,8 @@ class RecipesFragment : Fragment() {
 
                 // Convert MealWithDetails to RecipeItem
 
-                mealsWithDetails?.map { mealWithDetails ->
+
+                val lol = mealsWithDetails?.map { mealWithDetails ->
                     RecipeItem(
                         id = mealWithDetails.meal.id,
                         name = mealWithDetails.meal.name,
@@ -204,8 +207,14 @@ class RecipesFragment : Fragment() {
                         instructions = mealWithDetails.instructions.map { it.toDomain() }
                     )
                 } ?: emptyList()
+
+                Log.e("RecipesFragment", "LOOOL: $lol")
+                lol
+
+
             }
         } catch (e: Exception) {
+            Log.e("RecipesFragment", "Error fetching recipes: ${e.message}")
             emptyList()
         }
     }

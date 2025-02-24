@@ -11,7 +11,7 @@ import com.maayn.mealmate.data.local.entities.*
 @Database(
     entities = [Meal::class, FavoriteMeal::class, MealPlan::class, Ingredient::class, ShoppingList::class,
         MealOfTheDay::class, InstructionEntity::class, IngredientEntity::class],
-    version = 2
+    version = 4
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {

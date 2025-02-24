@@ -19,12 +19,8 @@ interface FavoriteMealDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertInstructions(instructions: List<InstructionEntity>)
 
-    @Transaction
-    suspend fun insertMealWithDetails(mealWithDetails: MealWithDetails) {
-        insertMeal(mealWithDetails.meal)
-        insertIngredients(mealWithDetails.ingredients)
-        insertInstructions(mealWithDetails.instructions)
-    }
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFavoriteMeal(favoriteMeal: FavoriteMeal)
 
     @Update
     suspend fun updateMeal(meal: Meal)
@@ -35,11 +31,29 @@ interface FavoriteMealDao {
     @Update
     suspend fun updateInstructions(instructions: List<InstructionEntity>)
 
+    @Update
+    suspend fun updateFavoriteMeal(favoriteMeal: FavoriteMeal)
+
+    @Transaction
+    suspend fun insertMealWithDetails(mealWithDetails: MealWithDetails) {
+        insertMeal(mealWithDetails.meal)
+        insertIngredients(mealWithDetails.ingredients)
+        insertInstructions(mealWithDetails.instructions)
+
+        // Convert MealWithDetails → FavoriteMeal and insert
+        val favoriteMeal = FavoriteMeal(id = mealWithDetails.meal.id,)
+        insertFavoriteMeal(favoriteMeal)
+    }
+
     @Transaction
     suspend fun updateMealWithDetails(mealWithDetails: MealWithDetails) {
         updateMeal(mealWithDetails.meal)
         updateIngredients(mealWithDetails.ingredients)
         updateInstructions(mealWithDetails.instructions)
+
+        // Convert MealWithDetails → FavoriteMeal and update
+        val favoriteMeal = FavoriteMeal(id = mealWithDetails.meal.id)
+        updateFavoriteMeal(favoriteMeal)
     }
 
     @Transaction

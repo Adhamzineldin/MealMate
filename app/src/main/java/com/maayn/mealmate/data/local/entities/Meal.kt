@@ -7,7 +7,7 @@ import kotlin.random.Random
 @Entity(tableName = "meals")
 data class Meal(
     @PrimaryKey
-    val id: String,
+    val id: String = "",  // Provide default value
     val name: String = "",
     val imageUrl: String = "",
     val isFavorite: Boolean = false,
@@ -15,7 +15,10 @@ data class Meal(
     val country: String = "",
     val videoUrl: String = "",
     val category: String = "",
-    val time: String = "${Random.nextInt(10, 90)} min",
-    val rating: Float = Random.nextDouble(3.0, 5.0).toFloat(),
-    val ratingCount: Int = Random.nextInt(10, 1000)
-)
+    val time: String = "10 min",  // Remove Random generator for Firebase compatibility
+    val rating: Float = 3.0f,
+    val ratingCount: Int = 10
+) {
+    // Explicit no-arg constructor (not needed but ensures Firebase compatibility)
+    constructor() : this("")
+}

@@ -89,7 +89,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     IngredientEntity(mealId = mealEntity.id, name = it.name, measure = it.measure)
                 }
                 val instructions = apiMeal.extractInstructions().map {
-                    InstructionEntity(mealId = mealEntity.id, step = it.step.toInt(), description = it.step)
+                    InstructionEntity(mealId = mealEntity.id, step = it.step, description = it.step)
                 }
 
                 // 🔹 Store data in Firestore and Room

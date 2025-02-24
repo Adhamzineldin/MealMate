@@ -1,6 +1,7 @@
 package com.maayn.mealmate.presentation.favorites
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -30,7 +31,7 @@ import kotlinx.coroutines.withContext
 import kotlin.collections.forEach
 import kotlin.time.Duration.Companion.milliseconds
 
-class FavoritesFragment : Fragment(){
+class FavoritesFragment : Fragment() {
     private var _binding: FragmentRecipesBinding? = null
     private val binding get() = _binding!!
     private lateinit var networkMonitor: NetworkMonitor
@@ -42,44 +43,44 @@ class FavoritesFragment : Fragment(){
     private val semaphore = Semaphore(5) // Limit concurrent network requests
 
     // Adapter using ListAdapter with DiffUtil
-    var recipesAdapter: RecipesAdapter ?= null
+    var recipesAdapter: RecipesAdapter? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        Log.d("FavoritesFragment", "onCreateView called")
         _binding = FragmentRecipesBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        this.recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope)
+        Log.d("FavoritesFragment", "onViewCreated called")
+
+        recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope)
         setupNetworkMonitor()
         setupUI()
         setupObservers()
         setupListeners()
     }
 
-
-
-
     private fun setupNetworkMonitor() {
+        Log.d("FavoritesFragment", "Setting up Network Monitor")
         networkMonitor = NetworkMonitor(requireContext()) { isConnected ->
+            Log.d("FavoritesFragment", "Network status changed: $isConnected")
             binding.emptyState.isVisible = !isConnected
-            if (isConnected && allRecipes.isEmpty()) fetchRecipes()
+            if (isConnected && allRecipes.isEmpty()) {
+                Log.d("FavoritesFragment", "No recipes found, fetching data...")
+                fetchRecipes()
+            }
         }
         networkMonitor.register()
     }
 
     private fun setupUI() {
-
-
-
-
+        Log.d("FavoritesFragment", "Setting up UI")
         binding.rvRecipes.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = recipesAdapter
@@ -88,34 +89,42 @@ class FavoritesFragment : Fragment(){
     }
 
     private fun setupObservers() {
+        Log.d("FavoritesFragment", "Setting up observers")
         lifecycleScope.launch {
             combine(
                 currentCategory,
                 searchQuery.debounce(300.milliseconds)
             ) { category, query -> Pair(category, query) }
-                .flowOn(Dispatchers.IO) // Move heavy processing off the main thread
+                .flowOn(Dispatchers.IO)
                 .collectLatest { (category, query) ->
+                    Log.d("FavoritesFragment", "Filtering recipes for category: $category, query: $query")
                     val filtered = allRecipes.filter {
                         (it.category == category || category == "All") &&
                                 it.name.contains(query, true)
                     }
+                    Log.d("FavoritesFragment", "Filtered recipes count: ${filtered.size}")
                     withContext(Dispatchers.Main) { showRecipes(filtered) }
                 }
         }
     }
 
-
     private fun setupListeners() {
+        Log.d("FavoritesFragment", "Setting up listeners")
         binding.apply {
-            btnBack.setOnClickListener { activity?.onBackPressed() }
-            btnFilter.setOnClickListener { showFilterComingSoon() }
+            btnBack.setOnClickListener {
+                Log.d("FavoritesFragment", "Back button clicked")
+                activity?.onBackPressed()
+            }
+            btnFilter.setOnClickListener {
+                Log.d("FavoritesFragment", "Filter button clicked")
+                showFilterComingSoon()
+            }
             etSearch.addTextChangedListener { text ->
+                Log.d("FavoritesFragment", "Search query changed: $text")
                 searchQuery.value = text?.toString()?.trim() ?: ""
             }
         }
     }
-
-
 
     private fun fetchRecipes() {
         lifecycleScope.launch(Dispatchers.IO) {
@@ -127,6 +136,11 @@ class FavoritesFragment : Fragment(){
 
                 // Fetch favorite meals with details
                 val mealsWithDetails = favoriteDao.getAllFavoriteMealDetails()
+                Log.d("FavoritesFragment", "Fetched ${mealsWithDetails.size} meals from database")
+
+                if (mealsWithDetails.isEmpty()) {
+                    Log.w("FavoritesFragment", "Database returned 0 meals!")
+                }
 
                 withContext(Dispatchers.Main) {
                     allRecipes = mealsWithDetails.map { mealWithDetails ->
@@ -144,9 +158,12 @@ class FavoritesFragment : Fragment(){
                             instructions = mealWithDetails.instructions.map { it.toDomain() }
                         )
                     }
+
+                    Log.d("FavoritesFragment", "Mapped ${allRecipes.size} recipes")
                     updateRecipes()
                 }
             } catch (e: Exception) {
+                Log.e("FavoritesFragment", "Error fetching favorites: ${e.message}", e)
                 withContext(Dispatchers.Main) { showError("Failed to load favorites: ${e.message}") }
             } finally {
                 withContext(Dispatchers.Main) { hideLoading() }
@@ -154,28 +171,9 @@ class FavoritesFragment : Fragment(){
         }
     }
 
-
-
-    private fun setupCategoryChips(categories: List<Category>) {
-        binding.chipGroup.removeAllViews()
-        addChip("All", true)
-        categories.forEach { addChip(it.strCategory, false) }
-    }
-
-    private fun addChip(label: String, isSelected: Boolean) {
-        Chip(requireContext()).apply {
-            text = label
-            isCheckable = true
-            isChecked = isSelected
-            setOnCheckedChangeListener { _, checked ->
-                if (checked) currentCategory.value = label
-            }
-            binding.chipGroup.addView(this)
-        }
-    }
-
     private fun updateRecipes() {
         lifecycleScope.launch(Dispatchers.IO) {
+            Log.d("FavoritesFragment", "Updating recipes list...")
             val currentQuery = searchQuery.value
             val currentCategory = currentCategory.value
 
@@ -183,53 +181,49 @@ class FavoritesFragment : Fragment(){
                 (it.category == currentCategory || currentCategory == "All") &&
                         it.name.contains(currentQuery, true)
             }
+            Log.d("FavoritesFragment", "Filtered recipes count after update: ${filtered.size}")
 
             withContext(Dispatchers.Main) { showRecipes(filtered) }
         }
     }
 
-
     private fun showLoading() {
-        // binding.progressBar.isVisible = true
+        Log.d("FavoritesFragment", "Showing loading state")
         binding.rvRecipes.isVisible = false
         binding.emptyState.isVisible = false
     }
 
     private fun hideLoading() {
-        // binding.progressBar.isVisible = false
+        Log.d("FavoritesFragment", "Hiding loading state")
     }
 
     private fun showRecipes(recipes: List<RecipeItem>) {
+        Log.d("FavoritesFragment", "Displaying ${recipes.size} recipes")
         binding.rvRecipes.isVisible = true
         binding.emptyState.isVisible = false
         recipesAdapter?.updateData(recipes)
     }
 
     private fun showEmptyState() {
+        Log.d("FavoritesFragment", "Showing empty state")
         binding.rvRecipes.isVisible = false
         binding.emptyState.isVisible = true
     }
 
     private fun showError(message: String) {
+        Log.e("FavoritesFragment", "Error: $message")
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         showEmptyState()
     }
 
     private fun showFilterComingSoon() {
+        Log.d("FavoritesFragment", "Filter feature is not implemented yet")
         Toast.makeText(context, "Filter feature coming soon!", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun showRecipeDetails(recipe: RecipeItem) {
-        // Implement navigation to recipe details
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        Log.d("FavoritesFragment", "onDestroyView called, unregistering network monitor")
         networkMonitor.unregister()
-
     }
-
-
-
-
 }

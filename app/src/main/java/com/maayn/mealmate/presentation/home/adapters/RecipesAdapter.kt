@@ -76,7 +76,10 @@ class RecipesAdapter(
                     val db = AppDatabase.getInstance(context) // Use passed context
                     val favoriteDao = db.favoriteMealDao()
 
+                    Log.d("DB", "Checking for existing favorite with ID: ${updatedItemAndClass.meal.id}")
                     val existingItem = favoriteDao.getFavoriteMealDetailsById(updatedItemAndClass.meal.id)
+                    Log.d("DB", "Query result: $existingItem")
+
 
                     if (existingItem != null) {
                         favoriteDao.updateMealWithDetails(updatedItemAndClass)
