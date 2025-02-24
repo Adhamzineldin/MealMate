@@ -16,5 +16,6 @@
     <string name="recipes">Recipes</string>
     <string name="profile">Profile</string>
     <string name="add_to_list">Add To List</string>
+    <string name="favorite">Favorites\n</string>
 
 </resources>

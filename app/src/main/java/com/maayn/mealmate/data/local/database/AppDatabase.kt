@@ -9,7 +9,8 @@ import com.maayn.mealmate.data.local.dao.*
 import com.maayn.mealmate.data.local.entities.*
 
 @Database(
-    entities = [Meal::class, FavoriteMeal::class, MealPlan::class, Ingredient::class, ShoppingList::class, MealOfTheDay::class],
+    entities = [Meal::class, FavoriteMeal::class, MealPlan::class, Ingredient::class, ShoppingList::class,
+        MealOfTheDay::class, InstructionEntity::class, IngredientEntity::class],
     version = 1
 )
 @TypeConverters(Converters::class)
@@ -24,13 +25,13 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
 
-        fun getInstance(context: Context): AppDatabase {
+        fun getInstance(context: Context?): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
-                    context.applicationContext,
+                    context?.applicationContext ?: throw IllegalStateException("Context is null"),
                     AppDatabase::class.java,
                     "meal_database"
-                ).build()
+                ).fallbackToDestructiveMigration() .build()
                 INSTANCE = instance
                 instance
             }

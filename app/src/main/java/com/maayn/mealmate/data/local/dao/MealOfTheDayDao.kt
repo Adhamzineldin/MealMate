@@ -1,11 +1,8 @@
 package com.maayn.mealmate.data.local.dao
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import com.maayn.mealmate.data.local.entities.MealOfTheDay
-import java.time.LocalDate
+import com.maayn.mealmate.data.local.entities.MealWithDetails
 
 @Dao
 interface MealOfTheDayDao {
@@ -13,8 +10,9 @@ interface MealOfTheDayDao {
     suspend fun setMealOfTheDay(meal: MealOfTheDay)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMealOfTheDay(mealOfTheDay: List<MealOfTheDay>)
+    suspend fun insertMealsOfTheDay(meals: List<MealOfTheDay>)
 
-    @Query("SELECT * FROM meal_of_the_day WHERE date = :today LIMIT 1")
-    suspend fun getMealOfTheDay(today: String): MealOfTheDay?
+    @Transaction
+    @Query("SELECT * FROM meals WHERE id = (SELECT mealId FROM meal_of_the_day WHERE date = :today LIMIT 1)")
+    suspend fun getMealOfTheDayDetails(today: String): MealWithDetails?
 }

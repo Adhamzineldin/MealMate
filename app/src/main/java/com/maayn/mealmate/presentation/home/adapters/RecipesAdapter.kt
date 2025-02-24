@@ -1,8 +1,10 @@
 package com.maayn.mealmate.presentation.home.adapters
 
+import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -10,9 +12,15 @@ import com.bumptech.glide.Glide
 import com.maayn.mealmate.databinding.ItemRecipeBinding
 import com.maayn.mealmate.presentation.home.model.RecipeItem
 import com.maayn.mealmate.R
+import com.maayn.mealmate.data.local.database.AppDatabase
+import com.maayn.mealmate.presentation.home.model.toMealWithDetails
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class RecipesAdapter(
-    private var recipes: List<RecipeItem> = emptyList(),
+    private val context: Context,
+    private val lifecycleScope: LifecycleCoroutineScope,
+    private var recipes: List<RecipeItem>? = emptyList(),
 ) : ListAdapter<RecipeItem, RecipesAdapter.RecipeViewHolder>(RecipeDiffCallback()) {
 
     init {
@@ -62,8 +70,25 @@ class RecipesAdapter(
         }
 
         private fun updateFavoriteInDatabase(updatedItem: RecipeItem) {
-            Log.e("click", "updateFavoriteInDatabase:")
+            val updatedItemAndClass = updatedItem.toMealWithDetails()
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val db = AppDatabase.getInstance(context) // Use passed context
+                    val favoriteDao = db.favoriteMealDao()
 
+                    val existingItem = favoriteDao.getFavoriteMealDetailsById(updatedItemAndClass.meal.id)
+
+                    if (existingItem != null) {
+                        favoriteDao.updateMealWithDetails(updatedItemAndClass)
+                        Log.e("DB", "Updated existing favorite: ${updatedItem.name}")
+                    } else {
+                        favoriteDao.insertMealWithDetails(updatedItemAndClass)
+                        Log.e("DB", "Added new favorite: ${updatedItem.name}")
+                    }
+                } catch (e: Exception) {
+                    Log.e("DB_ERROR", "Failed to update favorite: ${e.message}")
+                }
+            }
         }
 
         private fun updateFavoriteIcon(isFavorited: Boolean) {

@@ -7,11 +7,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
-import com.maayn.mealmate.data.local.dao.MealDao
-import com.maayn.mealmate.data.local.dao.MealOfTheDayDao
 import com.maayn.mealmate.data.local.database.AppDatabase
-import com.maayn.mealmate.data.local.entities.Meal
-import com.maayn.mealmate.data.local.entities.MealOfTheDay
+import com.maayn.mealmate.data.local.entities.*
+import com.maayn.mealmate.data.model.extractIngredients
+import com.maayn.mealmate.data.model.extractInstructions
 import com.maayn.mealmate.data.remote.api.RetrofitClient
 import com.maayn.mealmate.presentation.home.model.RecipeItem
 import kotlinx.coroutines.Dispatchers
@@ -19,108 +18,89 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
-import kotlin.random.Random
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val mealDao: MealDao
-    private val mealOfTheDayDao: MealOfTheDayDao
+    private val mealDao = AppDatabase.getInstance(application).mealDao()
+    private val mealOfTheDayDao = AppDatabase.getInstance(application).mealOfTheDayDao()
     private val firestore = FirebaseFirestore.getInstance()
 
     private val _mealOfTheDay = MutableLiveData<RecipeItem?>()
     val mealOfTheDay: LiveData<RecipeItem?> get() = _mealOfTheDay
-
-    init {
-        val db = AppDatabase.getInstance(application)
-        mealDao = db.mealDao()
-        mealOfTheDayDao = db.mealOfTheDayDao()
-    }
 
     fun fetchMealOfTheDay() {
         viewModelScope.launch {
             try {
                 val today = LocalDate.now().toString()
 
-                // Step 1: Check Room database first
-                val storedMealOfTheDay = withContext(Dispatchers.IO) {
-                    mealOfTheDayDao.getMealOfTheDay(today)
+                val storedMeal = withContext(Dispatchers.IO) {
+                    mealOfTheDayDao.getMealOfTheDayDetails(today)
                 }
 
-                val localMeal = storedMealOfTheDay?.let {
-                    withContext(Dispatchers.IO) { mealDao.getMealById(it.mealId) }
-                }
+                val mealWithDetails = storedMeal ?: fetchMealFromFirebase(today) ?: fetchMealFromApi(today)
 
-                val meal = localMeal ?: run {
-                    // Step 2: If not found in Room, check Firebase
-                    val firebaseMealSnapshot = try {
-                        withContext(Dispatchers.IO) {
-                            firestore.collection("mealOfTheDay").document(today).get().await()
-                        }
-                    } catch (e: Exception) {
-                        Log.e("HomeViewModel", "Firebase fetch failed: ${e.localizedMessage}")
-                        null
-                    }
-
-                    val firebaseMeal = firebaseMealSnapshot?.toObject(Meal::class.java)?.also { mealData ->
-                        withContext(Dispatchers.IO) {
-                            mealDao.insertMeal(mealData)
-                            mealOfTheDayDao.setMealOfTheDay(MealOfTheDay(mealId = mealData.id, date = today))
-                        }
-                    }
-
-                    firebaseMeal ?: run {
-                        // Step 3: If not found in Firebase, fetch from API
-                        val response = withContext(Dispatchers.IO) {
-                            RetrofitClient.apiService.getMealOfTheDay()
-                        }
-
-                        val apiMeal = response.meals?.firstOrNull()
-                            ?: throw Exception("No meal data returned from API")
-
-                        val mealEntity = Meal(
-                            id = apiMeal.idMeal,
-                            name = apiMeal.strMeal,
-                            imageUrl = apiMeal.strMealThumb,
-                            isFavorite = false,
-                            mealOfTheDay = true,
-                            country = "todo",
-                            ingredients = emptyList(),
-                            steps = emptyList(),
-                            videoUrl = "todo"
-                        )
-
-                        // Step 4: Store meal in Firebase and Room
-                        withContext(Dispatchers.IO) {
-                            try {
-                                firestore.collection("mealOfTheDay").document(today).set(mealEntity).await()
-                            } catch (e: Exception) {
-                                Log.e("HomeViewModel", "Firebase write failed: ${e.localizedMessage}")
-                            }
-                            mealDao.insertMeal(mealEntity)
-                            mealOfTheDayDao.setMealOfTheDay(MealOfTheDay(mealId = mealEntity.id, date = today))
-                        }
-                        mealEntity
-                    }
-                }
-
-                // Step 5: Update LiveData
-                meal?.let {
-                    val randomRating = listOf(1, 2, 3, 4, 5, 1.5f, 2.5f, 3.5f, 4.5f, 5.0f).random().toFloat()
-                    val randomTime = Random.nextInt(10, 61)
-                    val recipeItem = RecipeItem(
-                        id = it.id,
-                        name = it.name,
-                        time = "$randomTime minutes",
-                        rating = randomRating,
-                        imageUrl = it.imageUrl,
-                        category = "todo"
-                    )
-
-                    _mealOfTheDay.postValue(recipeItem)
+                mealWithDetails?.let { meal ->
+                    _mealOfTheDay.postValue(meal.toRecipeItem())
                 }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error: ${e.message}")
             }
         }
     }
+
+    private suspend fun fetchMealFromFirebase(today: String): MealWithDetails? {
+        return try {
+            val snapshot = withContext(Dispatchers.IO) {
+                firestore.collection("mealOfTheDay").document(today).get().await()
+            }
+            val firebaseMeal = snapshot.toObject(Meal::class.java)
+            firebaseMeal?.let { meal ->
+                withContext(Dispatchers.IO) {
+                    mealDao.insertMeal(meal)
+                    mealOfTheDayDao.setMealOfTheDay(MealOfTheDay(mealId = meal.id, date = today))
+                }
+                mealDao.getMealWithDetails(meal.id)
+            }
+        } catch (e: Exception) {
+            Log.e("HomeViewModel", "Firebase fetch failed: ${e.localizedMessage}")
+            null
+        }
+    }
+
+    private suspend fun fetchMealFromApi(today: String): MealWithDetails? {
+        return try {
+            val response = withContext(Dispatchers.IO) { RetrofitClient.apiService.getMealOfTheDay() }
+            val apiMeal = response.meals?.firstOrNull() ?: return null
+
+            val mealEntity = Meal(
+                id = apiMeal.id,
+                name = apiMeal.name,
+                category = apiMeal.category ?: "Unknown",
+                country = apiMeal.area ?: "Unknown",
+                imageUrl = apiMeal.imageUrl,
+                videoUrl = apiMeal.youtubeUrl.toString(),
+                isFavorite = false
+            )
+
+
+
+
+            val ingredients = apiMeal.extractIngredients().map { IngredientEntity(mealId = mealEntity.id, name = it.name, measure = it.measure) }
+            val instructions = apiMeal.extractInstructions().map { InstructionEntity(mealId = mealEntity.id, step = it.step.toInt(), description = it.step) }
+
+
+            withContext(Dispatchers.IO) {
+                firestore.collection("mealOfTheDay").document(today).set(mealEntity).await()
+                mealDao.insertMealWithDetails(mealEntity, ingredients, instructions)
+                mealOfTheDayDao.setMealOfTheDay(MealOfTheDay(mealId = mealEntity.id, date = today))
+            }
+
+            mealDao.getMealWithDetails(mealEntity.id)
+        } catch (e: Exception) {
+            Log.e("HomeViewModel", "API fetch failed: ${e.localizedMessage}")
+            null
+        }
+    }
+
+
 }

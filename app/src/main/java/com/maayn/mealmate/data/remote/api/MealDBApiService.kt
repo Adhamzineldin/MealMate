@@ -20,4 +20,7 @@ interface MealDBApiService {
 
     @GET("random.php")
     suspend fun getMealOfTheDay(): RecipeResponse
+
+    @GET("lookup.php")
+    suspend fun getMealDetails(@Query("i") mealId: String): RecipeResponse
 }

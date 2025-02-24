@@ -1,7 +1,6 @@
 package com.maayn.mealmate.presentation.home
 
 import android.os.Bundle
-import android.os.StrictMode
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,17 +9,19 @@ import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.google.android.material.chip.Chip
 import com.maayn.mealmate.core.utils.NetworkMonitor
+import com.maayn.mealmate.data.local.entities.IngredientEntity
+import com.maayn.mealmate.data.local.entities.InstructionEntity
+import com.maayn.mealmate.data.local.entities.Meal
+import com.maayn.mealmate.data.local.entities.MealWithDetails
+import com.maayn.mealmate.data.local.entities.toDomain
 import com.maayn.mealmate.data.model.Category
+import com.maayn.mealmate.data.model.extractIngredients
+import com.maayn.mealmate.data.model.extractInstructions
 import com.maayn.mealmate.data.remote.api.RetrofitClient
 import com.maayn.mealmate.databinding.FragmentRecipesBinding
-import com.maayn.mealmate.databinding.ItemRecipeBinding
 import com.maayn.mealmate.presentation.home.adapters.RecipesAdapter
 import com.maayn.mealmate.presentation.home.model.RecipeItem
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +52,7 @@ class RecipesFragment : Fragment() {
     private val semaphore = Semaphore(5) // Limit concurrent network requests
 
     // Adapter using ListAdapter with DiffUtil
-    val recipesAdapter = RecipesAdapter()
+    var recipesAdapter: RecipesAdapter ?= null
 
 
     override fun onCreateView(
@@ -65,6 +66,7 @@ class RecipesFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope,)
         setupNetworkMonitor()
         setupUI()
         setupObservers()
@@ -160,24 +162,54 @@ class RecipesFragment : Fragment() {
     private suspend fun fetchRecipesForCategory(category: Category): List<RecipeItem> {
         return try {
             semaphore.withPermit {
-                val meals = withContext(Dispatchers.IO) {
-                    RetrofitClient.apiService.getMealsForCategory(category.strCategory).meals
+                val mealsWithDetails = withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.getMealsForCategory(category.strCategory).meals?.mapNotNull { mealDto ->
+                        val detailsResponse = RetrofitClient.apiService.getMealsForCategory(mealDto.id)
+                        val mealDetails = detailsResponse.meals?.firstOrNull() ?: return@mapNotNull null
+
+                        // Convert API response to Room entities
+                        val mealEntity = Meal(
+                            id = mealDetails.id,
+                            name = mealDetails.name,
+                            imageUrl = mealDetails.imageUrl,
+                            country = mealDetails.area ?: "Unknown",
+                            isFavorite = false,  // Default to false if not in favorites
+                            time = "${Random.nextInt(10, 61)} minutes",
+                            rating = listOf(1f, 1.5f, 2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f).random(),
+                            ratingCount = Random.nextInt(10, 500),
+                            category = category.strCategory
+                        )
+
+                        val ingredients = mealDetails.extractIngredients().map { IngredientEntity(mealId = mealEntity.id, name = it.name, measure = it.measure) }
+                        val instructions = mealDetails.extractInstructions().map { InstructionEntity(mealId = mealEntity.id, step = it.step.toInt(), description = it.step) }
+
+                        MealWithDetails(meal = mealEntity, ingredients = ingredients, instructions = instructions)
+                    }
                 }
-                meals.map { meal ->
+
+                // Convert MealWithDetails to RecipeItem
+
+                mealsWithDetails?.map { mealWithDetails ->
                     RecipeItem(
-                        id = meal.idMeal,
-                        name = meal.strMeal,
-                        time = "${Random.nextInt(10, 61)} minutes",
-                        rating = listOf(1f, 1.5f, 2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f).random(),
-                        imageUrl = meal.strMealThumb,
-                        category = category.strCategory
+                        id = mealWithDetails.meal.id,
+                        name = mealWithDetails.meal.name,
+                        imageUrl = mealWithDetails.meal.imageUrl,
+                        area = mealWithDetails.meal.country,
+                        isFavorited = mealWithDetails.meal.isFavorite,
+                        time = mealWithDetails.meal.time,
+                        rating = mealWithDetails.meal.rating,
+                        ratingCount = mealWithDetails.meal.ratingCount,
+                        category = mealWithDetails.meal.category,
+                        ingredients = mealWithDetails.ingredients.map { it.toDomain() },
+                        instructions = mealWithDetails.instructions.map { it.toDomain() }
                     )
-                }
+                } ?: emptyList()
             }
         } catch (e: Exception) {
             emptyList()
         }
     }
+
 
     private fun setupCategoryChips(categories: List<Category>) {
         binding.chipGroup.removeAllViews()
@@ -225,7 +257,7 @@ class RecipesFragment : Fragment() {
     private fun showRecipes(recipes: List<RecipeItem>) {
         binding.rvRecipes.isVisible = true
         binding.emptyState.isVisible = false
-        recipesAdapter.updateData(recipes)
+        recipesAdapter?.updateData(recipes)
     }
 
     private fun showEmptyState() {

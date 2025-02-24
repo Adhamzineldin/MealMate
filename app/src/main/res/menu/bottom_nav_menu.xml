@@ -9,9 +9,9 @@
         android:icon="@drawable/calender"
         android:title="@string/meal_plan" />
     <item
-        android:id="@+id/nav_shop"
-        android:icon="@drawable/ic_shop"
-        android:title="@string/shop" />
+        android:id="@+id/nav_favorites"
+        android:icon="@drawable/ic_favorite"
+        android:title="@string/favorite"/>
     <item
         android:id="@+id/nav_recipes"
         android:icon="@drawable/ic_recipe"

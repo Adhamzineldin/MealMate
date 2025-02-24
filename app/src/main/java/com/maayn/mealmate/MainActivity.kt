@@ -57,8 +57,8 @@ class MainActivity : AppCompatActivity() {
 //                    navController.navigate(R.id.mealPlanFragment)
                     true
                 }
-                R.id.nav_shop -> {
-//                    navController.navigate(R.id.shopFragment)
+                R.id.nav_favorites -> {
+                    navController.navigateSafely(R.id.favoritesFragment)
                     true
                 }
                 R.id.nav_recipes -> {

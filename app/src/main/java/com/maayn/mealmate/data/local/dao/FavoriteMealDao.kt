@@ -1,26 +1,54 @@
 package com.maayn.mealmate.data.local.dao
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.Query
-import androidx.room.Delete
-import androidx.room.OnConflictStrategy
+import androidx.room.*
 import com.maayn.mealmate.data.local.entities.FavoriteMeal
+import com.maayn.mealmate.data.local.entities.IngredientEntity
+import com.maayn.mealmate.data.local.entities.InstructionEntity
+import com.maayn.mealmate.data.local.entities.Meal
+import com.maayn.mealmate.data.local.entities.MealWithDetails
 
 @Dao
 interface FavoriteMealDao {
-    @Insert
-    suspend fun addFavoriteMeal(favoriteMeal: FavoriteMeal)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertFavorites(favorites: List<FavoriteMeal>)
+    suspend fun insertMeal(meal: Meal)
 
-    @Delete
-    suspend fun removeFavoriteMeal(favoriteMeal: FavoriteMeal)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertIngredients(ingredients: List<IngredientEntity>)
 
-    @Query("SELECT * FROM favorite_meals")
-    suspend fun getAllFavoriteMeals(): List<FavoriteMeal>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertInstructions(instructions: List<InstructionEntity>)
 
-    @Query("SELECT * FROM favorite_meals WHERE id = :mealId")
-    suspend fun getFavoriteMealById(mealId: String): FavoriteMeal?
+    @Transaction
+    suspend fun insertMealWithDetails(mealWithDetails: MealWithDetails) {
+        insertMeal(mealWithDetails.meal)
+        insertIngredients(mealWithDetails.ingredients)
+        insertInstructions(mealWithDetails.instructions)
+    }
+
+    @Update
+    suspend fun updateMeal(meal: Meal)
+
+    @Update
+    suspend fun updateIngredients(ingredients: List<IngredientEntity>)
+
+    @Update
+    suspend fun updateInstructions(instructions: List<InstructionEntity>)
+
+    @Transaction
+    suspend fun updateMealWithDetails(mealWithDetails: MealWithDetails) {
+        updateMeal(mealWithDetails.meal)
+        updateIngredients(mealWithDetails.ingredients)
+        updateInstructions(mealWithDetails.instructions)
+    }
+
+    @Transaction
+    @Query("SELECT * FROM meals WHERE id IN (SELECT id FROM favorite_meals)")
+    suspend fun getAllFavoriteMealDetails(): List<MealWithDetails>
+
+    @Transaction
+    @Query("SELECT * FROM meals WHERE id = :mealId AND id IN (SELECT id FROM favorite_meals)")
+    suspend fun getFavoriteMealDetailsById(mealId: String): MealWithDetails?
 }
+
+

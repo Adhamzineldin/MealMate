@@ -12,11 +12,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.maayn.mealmate.core.utils.NetworkMonitor
-import com.maayn.mealmate.data.local.database.AppDatabase
-import com.maayn.mealmate.data.local.entities.Meal
-import com.maayn.mealmate.data.local.entities.MealOfTheDay
+import com.maayn.mealmate.data.model.extractIngredients
+import com.maayn.mealmate.data.model.extractInstructions
 import com.maayn.mealmate.databinding.FragmentHomeBinding
 import com.maayn.mealmate.presentation.home.adapters.RecipesAdapter
 import com.maayn.mealmate.presentation.home.model.CategoryItem
@@ -25,11 +23,7 @@ import com.maayn.mealmate.presentation.home.model.RecipeItem
 import com.maayn.mealmate.data.remote.api.RetrofitClient
 import com.maayn.mealmate.presentation.home.adapters.CategoriesAdapter
 import com.maayn.mealmate.presentation.home.adapters.IngredientsAdapter
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
-import java.time.LocalDate
 import kotlin.random.Random
 
 class HomeFragment : Fragment() {
@@ -122,7 +116,7 @@ class HomeFragment : Fragment() {
         viewModel.mealOfTheDay.observe(viewLifecycleOwner) { meal ->
             meal?.let {
                 binding.rvMealOfTheDay.layoutManager = LinearLayoutManager(requireContext())
-                binding.rvMealOfTheDay.adapter = RecipesAdapter(listOf(it))
+                binding.rvMealOfTheDay.adapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope,listOf(it))
             }
         }
 
@@ -179,30 +173,36 @@ class HomeFragment : Fragment() {
             try {
                 // Fetch recipes for the category
                 val response = RetrofitClient.apiService.getMealsForCategory(category)
-                Log.i("HomeFragment", "Response: $response")
 
-                val recipeItems = response.meals.take(10).map { meal ->
-                    val imageUrl = meal.strMealThumb  // Recipe image URL
+
+
+                // Map API response to RecipeItem list
+                val recipeItems = response.meals?.take(10)?.map { meal ->
                     val randomRating = listOf(1, 2, 3, 4, 5, 1.5f, 2.5f, 3.5f, 4.5f, 5.0f).random().toFloat()
                     val randomTime = Random.nextInt(10, 61)  // Random time between 10 and 60 min
 
                     RecipeItem(
-                        meal.idMeal,
-                        meal.strMeal,
-                        "$randomTime minutes",
-                        randomRating,
-                        imageUrl,
-                        category = category
+                        id = meal.id,
+                        name = meal.name,
+                        category = category,
+                        area = meal.area ?: "Unknown",
+                        instructions = meal.extractInstructions(),
+                        imageUrl = meal.imageUrl,
+                        youtubeUrl = meal.youtubeUrl,
+                        ingredients = meal.extractIngredients(),
+                        isFavorited = false
                     )
                 }
 
+                // Update RecyclerView
                 binding.rvTrendingRecipes.apply {
                     layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-                    adapter = RecipesAdapter(recipeItems)
+                    adapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope, recipeItems)
                 }
 
             } catch (e: Exception) {
-                handleFailure("Failure: ${e.localizedMessage}")
+                Log.e("HomeFragment", "Error fetching recipes: ${e.localizedMessage}", e)
+                handleFailure("Failed to load recipes: ${e.localizedMessage}")
             }
         }
     }
