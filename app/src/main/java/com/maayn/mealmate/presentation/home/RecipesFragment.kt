@@ -79,11 +79,14 @@ class RecipesFragment : Fragment() {
 
     private fun setupNetworkMonitor() {
         networkMonitor = NetworkMonitor(requireContext()) { isConnected ->
-            binding.emptyState.isVisible = !isConnected
-            if (isConnected && allRecipes.isEmpty()) fetchRecipes()
+            activity?.runOnUiThread {
+                binding.emptyState.isVisible = !isConnected
+                if (isConnected && allRecipes.isEmpty()) fetchRecipes()
+            }
         }
         networkMonitor.register()
     }
+
 
     private fun setupUI() {
 

@@ -60,24 +60,12 @@ class FavoritesFragment : Fragment() {
         Log.d("FavoritesFragment", "onViewCreated called")
 
         recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope)
-        setupNetworkMonitor()
         setupUI()
         setupObservers()
         setupListeners()
     }
 
-    private fun setupNetworkMonitor() {
-        Log.d("FavoritesFragment", "Setting up Network Monitor")
-        networkMonitor = NetworkMonitor(requireContext()) { isConnected ->
-            Log.d("FavoritesFragment", "Network status changed: $isConnected")
-            binding.emptyState.isVisible = !isConnected
-            if (isConnected && allRecipes.isEmpty()) {
-                Log.d("FavoritesFragment", "No recipes found, fetching data...")
-                fetchRecipes()
-            }
-        }
-        networkMonitor.register()
-    }
+
 
     private fun setupUI() {
         Log.d("FavoritesFragment", "Setting up UI")

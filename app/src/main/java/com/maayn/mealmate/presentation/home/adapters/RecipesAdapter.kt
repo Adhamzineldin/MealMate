@@ -82,7 +82,7 @@ class RecipesAdapter(
 
 
                     if (existingItem != null) {
-                        favoriteDao.updateMealWithDetails(updatedItemAndClass)
+                        favoriteDao.deleteFavoriteMeal(updatedItemAndClass.meal.id)
                         Log.e("DB", "Updated existing favorite: ${updatedItem.name}")
                     } else {
                         favoriteDao.insertMealWithDetails(updatedItemAndClass)
