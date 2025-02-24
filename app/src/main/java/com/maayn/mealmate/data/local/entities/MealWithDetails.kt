@@ -23,16 +23,16 @@ data class MealWithDetails(
         return RecipeItem(
             id = meal.id,
             name = meal.name,
-            category = meal.category ?: "Unknown",
-            area = meal.country ?: "Unknown",
+            category = meal.category,
+            area = meal.country,
             imageUrl = meal.imageUrl,
             youtubeUrl = meal.videoUrl,
             isFavorited = meal.isFavorite,
             ingredients = ingredients.map { it.toDomain() },
             instructions = instructions.map { it.toDomain() },
-            time = meal.time ?: "Unknown",
-            rating = meal.rating ?: 0f,
-            ratingCount = meal.ratingCount ?: 0
+            time = meal.time,
+            rating = meal.rating,
+            ratingCount = meal.ratingCount
         )
     }
 }

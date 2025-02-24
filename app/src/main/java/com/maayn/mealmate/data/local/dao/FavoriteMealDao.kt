@@ -49,6 +49,17 @@ interface FavoriteMealDao {
     @Transaction
     @Query("SELECT * FROM meals WHERE id = :mealId AND id IN (SELECT id FROM favorite_meals)")
     suspend fun getFavoriteMealDetailsById(mealId: String): MealWithDetails?
-}
 
+    @Query("DELETE FROM favorite_meals WHERE id = :mealId")
+    suspend fun deleteFavoriteMeal(mealId: String)
+
+    @Query("UPDATE meals SET isFavorite = 0 WHERE id = :mealId")
+    suspend fun updateMealAsNotFavorite(mealId: String)
+
+    @Transaction
+    suspend fun removeFromFavorites(mealId: String) {
+        deleteFavoriteMeal(mealId)
+        updateMealAsNotFavorite(mealId)
+    }
+}
 

@@ -2,6 +2,7 @@ package com.maayn.mealmate.data.local.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlin.random.Random
 
 @Entity(tableName = "meals")
 data class Meal(
@@ -14,7 +15,7 @@ data class Meal(
     val country: String = "",
     val videoUrl: String = "",
     val category: String = "",
-    val time: String = "",
-    val rating: Float = 0f,
-    val ratingCount: Int = 0
+    val time: String = "${Random.nextInt(10, 90)} min",
+    val rating: Float = Random.nextDouble(3.0, 5.0).toFloat(),
+    val ratingCount: Int = Random.nextInt(10, 1000)
 )

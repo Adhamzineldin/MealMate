@@ -72,30 +72,34 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val response = withContext(Dispatchers.IO) { RetrofitClient.apiService.getMealOfTheDay() }
             val apiMeal = response.meals?.firstOrNull() ?: return null
 
-            val mealEntity = Meal(
-                id = apiMeal.id,
-                name = apiMeal.name,
-                category = apiMeal.category ?: "Unknown",
-                country = apiMeal.area ?: "Unknown",
-                imageUrl = apiMeal.imageUrl,
-                videoUrl = apiMeal.youtubeUrl.toString(),
-                isFavorite = false
-            )
-
-
-
-
-            val ingredients = apiMeal.extractIngredients().map { IngredientEntity(mealId = mealEntity.id, name = it.name, measure = it.measure) }
-            val instructions = apiMeal.extractInstructions().map { InstructionEntity(mealId = mealEntity.id, step = it.step.toInt(), description = it.step) }
-
-
             withContext(Dispatchers.IO) {
+
+
+                val mealEntity = Meal(
+                    id = apiMeal.id,
+                    name = apiMeal.name,
+                    category = apiMeal.category ?: "Unknown",
+                    country = apiMeal.area ?: "Unknown",
+                    imageUrl = apiMeal.imageUrl,
+                    videoUrl = apiMeal.youtubeUrl.toString(),
+                    isFavorite = false
+                )
+
+                val ingredients = apiMeal.extractIngredients().map {
+                    IngredientEntity(mealId = mealEntity.id, name = it.name, measure = it.measure)
+                }
+                val instructions = apiMeal.extractInstructions().map {
+                    InstructionEntity(mealId = mealEntity.id, step = it.step.toInt(), description = it.step)
+                }
+
+                // 🔹 Store data in Firestore and Room
                 firestore.collection("mealOfTheDay").document(today).set(mealEntity).await()
                 mealDao.insertMealWithDetails(mealEntity, ingredients, instructions)
                 mealOfTheDayDao.setMealOfTheDay(MealOfTheDay(mealId = mealEntity.id, date = today))
             }
 
-            mealDao.getMealWithDetails(mealEntity.id)
+            // ✅ Return the full MealWithDetails after inserting
+            mealDao.getMealWithDetails(apiMeal.id)
         } catch (e: Exception) {
             Log.e("HomeViewModel", "API fetch failed: ${e.localizedMessage}")
             null

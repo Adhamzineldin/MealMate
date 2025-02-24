@@ -3,6 +3,7 @@ import com.maayn.mealmate.data.local.entities.IngredientEntity
 import com.maayn.mealmate.data.local.entities.InstructionEntity
 import com.maayn.mealmate.data.local.entities.Meal
 import com.maayn.mealmate.data.local.entities.MealWithDetails
+import kotlin.random.Random
 
 data class RecipeItem(
     val id: String,
@@ -14,9 +15,9 @@ data class RecipeItem(
     val youtubeUrl: String? = null,
     val ingredients: List<Ingredient> = emptyList(),
     var isFavorited: Boolean = false,
-    val rating: Float = 0f,
-    val ratingCount: Int = 0,
-    val time: String = "Unknown"
+    val rating: Float = Random.nextDouble(3.0, 5.0).toFloat(),
+    val ratingCount: Int = Random.nextInt(10, 1000),
+    val time: String = "${Random.nextInt(10, 90)} min"
 ) {
     data class Ingredient(val name: String, val measure: String)
     data class Instruction(val step: String)
