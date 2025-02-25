@@ -34,7 +34,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class FavoritesFragment : Fragment() {
     private var _binding: FragmentRecipesBinding? = null
     private val binding get() = _binding!!
-    private lateinit var networkMonitor: NetworkMonitor
+
 
     // State management
     private val currentCategory = MutableStateFlow("All")
@@ -58,11 +58,11 @@ class FavoritesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         Log.d("FavoritesFragment", "onViewCreated called")
-
         recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope)
         setupUI()
         setupObservers()
         setupListeners()
+        fetchRecipes()
     }
 
 
@@ -212,6 +212,6 @@ class FavoritesFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         Log.d("FavoritesFragment", "onDestroyView called, unregistering network monitor")
-        networkMonitor.unregister()
+
     }
 }
