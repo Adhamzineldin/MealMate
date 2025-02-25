@@ -12,6 +12,9 @@ interface MealDao {
     suspend fun insertMeal(meal: Meal)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMeals(meals: List<Meal>)  // ✅ Batch insert
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertIngredients(ingredients: List<IngredientEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -24,12 +27,27 @@ interface MealDao {
         insertInstructions(instructions)
     }
 
+    @Transaction
+    suspend fun insertMealsWithDetails(meals: List<MealWithDetails>) {  // ✅ Batch insert for full meal details
+        for (mealWithDetails in meals) {
+            insertMealWithDetails(mealWithDetails.meal, mealWithDetails.ingredients, mealWithDetails.instructions)
+        }
+    }
+
     @Query("SELECT * FROM meals")
     suspend fun getAllMeals(): List<Meal>
 
     @Transaction
     @Query("SELECT * FROM meals WHERE id = :mealId")
-    suspend fun getMealWithDetails(mealId: String): MealWithDetails?
+    suspend fun getMealWithDetails(mealId: String): MealWithDetails
+
+    @Transaction
+    @Query("SELECT * FROM meals")
+    suspend fun getAllMealWithDetails(): List<MealWithDetails>
+
+    @Transaction
+    @Query("SELECT * FROM meals WHERE category = :category")
+    suspend fun getMealsWithDetailsByCategory(category: String): List<MealWithDetails>  // ✅ Added function
 
     @Query("DELETE FROM meals WHERE id = :mealId")
     suspend fun deleteMeal(mealId: String)

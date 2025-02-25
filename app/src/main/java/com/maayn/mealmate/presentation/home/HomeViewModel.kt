@@ -64,7 +64,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         } catch (e: Exception) {
             Log.e("HomeViewModel", "Firebase fetch failed: ${e.localizedMessage}")
             null
-        }
+        } as MealWithDetails?
     }
 
     private suspend fun fetchMealFromApi(today: String): MealWithDetails? {
@@ -103,7 +103,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         } catch (e: Exception) {
             Log.e("HomeViewModel", "API fetch failed: ${e.localizedMessage}")
             null
-        }
+        } as MealWithDetails?
     }
 
 

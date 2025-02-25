@@ -15,9 +15,9 @@ data class Meal(
     val country: String = "",
     val videoUrl: String = "",
     val category: String = "",
-    val time: String = "10 min",  // Remove Random generator for Firebase compatibility
-    val rating: Float = 3.0f,
-    val ratingCount: Int = 10
+    val time: String = "${(10..90).random()} min",  // Remove Random generator for Firebase compatibility
+    val rating: Float = (3..5).random().toFloat(),
+    val ratingCount: Int = (10..500).random()
 ) {
     // Explicit no-arg constructor (not needed but ensures Firebase compatibility)
     constructor() : this("")

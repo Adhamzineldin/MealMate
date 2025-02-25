@@ -136,12 +136,12 @@ class FavoritesFragment : Fragment() {
                             id = mealWithDetails.meal.id,
                             name = mealWithDetails.meal.name,
                             imageUrl = mealWithDetails.meal.imageUrl,
-                            area = mealWithDetails.meal.country ?: "Unknown",
+                            area = mealWithDetails.meal.country,
                             isFavorited = mealWithDetails.meal.isFavorite,
-                            time = mealWithDetails.meal.time ?: "Unknown",
-                            rating = mealWithDetails.meal.rating ?: 0f,
-                            ratingCount = mealWithDetails.meal.ratingCount ?: 0,
-                            category = mealWithDetails.meal.category ?: "Uncategorized",
+                            time = mealWithDetails.meal.time,
+                            rating = mealWithDetails.meal.rating,
+                            ratingCount = mealWithDetails.meal.ratingCount,
+                            category = mealWithDetails.meal.category,
                             ingredients = mealWithDetails.ingredients.map { it.toDomain() },
                             instructions = mealWithDetails.instructions.map { it.toDomain() }
                         )

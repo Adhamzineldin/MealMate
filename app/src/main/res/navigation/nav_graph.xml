@@ -91,6 +91,11 @@
         tools:layout="@layout/fragment_recipes">
 
         <action
+            android:id="@+id/action_recipesFragment_to_recipeDetailsFragment"
+            app:destination="@id/recipeDetailsFragment" />
+
+
+        <action
             android:id="@+id/action_recipesFragment_to_favoritesFragment"
             app:destination="@id/favoritesFragment" />
     </fragment>
@@ -114,5 +119,19 @@
             android:id="@+id/action_favoritesFragment_to_loginFragment"
             app:destination="@id/loginFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/recipeDetailsFragment"
+        android:name="com.maayn.mealmate.presentation.details.RecipeDetailsFragment"
+        android:label="Recipe Details"
+        tools:layout="@layout/fragment_recipe_details">
+
+        <argument
+            android:name="mealId"
+            app:argType="string"
+            app:nullable="false" />
+    </fragment>
+
+
 
 </navigation>

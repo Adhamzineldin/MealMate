@@ -10,9 +10,12 @@ import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.chip.Chip
 import com.maayn.mealmate.core.utils.NetworkMonitor
+import com.maayn.mealmate.data.local.dao.MealDao
+import com.maayn.mealmate.data.local.database.AppDatabase
 import com.maayn.mealmate.data.local.entities.IngredientEntity
 import com.maayn.mealmate.data.local.entities.InstructionEntity
 import com.maayn.mealmate.data.local.entities.Meal
@@ -51,6 +54,7 @@ class RecipesFragment : Fragment() {
     private val searchQuery = MutableStateFlow("")
     private var allRecipes = emptyList<RecipeItem>()
     private val semaphore = Semaphore(5) // Limit concurrent network requests
+    private lateinit var mealDao: MealDao // Inject your DAO
 
     // Adapter using ListAdapter with DiffUtil
     var recipesAdapter: RecipesAdapter ?= null
@@ -67,7 +71,11 @@ class RecipesFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope,)
+        recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope) { recipe ->
+            val action = RecipesFragmentDirections.actionRecipeListFragmentToMealDetailsFragment(recipe)
+            findNavController().navigate(action)
+        }
+
         setupNetworkMonitor()
         setupUI()
         setupObservers()
@@ -132,17 +140,45 @@ class RecipesFragment : Fragment() {
             try {
                 withContext(Dispatchers.Main) { showLoading() }
 
-                val categories = RetrofitClient.apiService.getMealCategories().categories
+                // Initialize database
+                val db = AppDatabase.getInstance(requireContext())
+                mealDao = db.mealDao()
 
-                val recipes = fetchAllRecipes(categories)
+                // Check local database first
+                val cachedRecipes = mealDao.getAllMealWithDetails()?.map { mealWithDetails ->
+                    RecipeItem(
+                        id = mealWithDetails.meal.id,
+                        name = mealWithDetails.meal.name,
+                        imageUrl = mealWithDetails.meal.imageUrl,
+                        area = mealWithDetails.meal.country,
+                        isFavorited = mealWithDetails.meal.isFavorite,
+                        time = mealWithDetails.meal.time,
+                        rating = mealWithDetails.meal.rating,
+                        ratingCount = mealWithDetails.meal.ratingCount,
+                        category = mealWithDetails.meal.category,
+                        ingredients = mealWithDetails.ingredients.map { it.toDomain() },
+                        instructions = mealWithDetails.instructions.map { it.toDomain() }
+                    )
+                } ?: emptyList()
 
-                Log.e("RecipesFragment", "Recipes: $recipes")
+                Log.d("RecipesFragment", "Fetching 10 random meals from API")
+                val newRecipes = fetchRandomMeals(10) // ✅ Fetch 10 random meals from API
+
+                // Save new meals to the database
+                saveRecipesToDatabase(newRecipes)
+
+                // Combine cached and new meals, removing duplicates by `id`
+                val allMeals = (cachedRecipes + newRecipes).distinctBy { it.id }
+
+                // Extract unique categories
+                val categories = allMeals.map { Category(strCategory = it.category) }.distinct()
 
                 withContext(Dispatchers.Main) {
-                    allRecipes = recipes
-                    setupCategoryChips(categories)
-                    updateRecipes()
+                    allRecipes = allMeals
+                    setupCategoryChips(categories) // ✅ Ensure category chips are updated properly
+                    updateRecipes() // ✅ UI now contains both cached and new meals
                 }
+
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { showError("Failed to load recipes: ${e.message}") }
             } finally {
@@ -153,16 +189,107 @@ class RecipesFragment : Fragment() {
 
 
 
+    private suspend fun fetchRandomMeals(count: Int): List<RecipeItem> {
+        val recipes = mutableListOf<RecipeItem>()
+
+        repeat(count) {
+            val mealResponse = RetrofitClient.apiService.getRandomMeal() // ✅ Single request per meal
+            val meal = mealResponse.meals?.firstOrNull() ?: return@repeat // Ensure meal exists
+
+            recipes.add(
+                RecipeItem(
+                    id = meal.id,
+                    name = meal.name,
+                    imageUrl = meal.imageUrl,
+                    area = meal.area.toString(),
+                    isFavorited = false, // Default to false for new meals
+                    time = "${(10..60).random()} min",// Simulate a time value
+                    rating = (3..5).random().toFloat(), // Simulate a rating
+                    ratingCount = (10..500).random(), // Simulate rating count
+                    category = meal.category.toString(),
+                    ingredients = listOf(),
+                    instructions = listOf()
+                )
+            )
+        }
+
+        return recipes
+    }
+
+
+
+
+
+
+    private suspend fun saveRecipesToDatabase(recipes: List<RecipeItem>) {
+        withContext(Dispatchers.IO) {
+            val meals = recipes.map { recipe ->
+                Meal(
+                    id = recipe.id,
+                    name = recipe.name,
+                    imageUrl = recipe.imageUrl,
+                    country = recipe.area,
+                    isFavorite = recipe.isFavorited,
+                    time = recipe.time,
+                    rating = recipe.rating,
+                    ratingCount = recipe.ratingCount,
+                    category = recipe.category
+                )
+            }
+
+            val ingredients = recipes.flatMap { recipe ->
+                recipe.ingredients.map { ingredient ->
+                    IngredientEntity(mealId = recipe.id, name = ingredient.name, measure = ingredient.measure)
+                }
+            }
+
+            val instructions = recipes.flatMap { recipe ->
+                recipe.instructions.map { instruction ->
+                    InstructionEntity(mealId = recipe.id, step = instruction.step, description = instruction.step)
+                }
+            }
+
+            mealDao.insertMeals(meals)
+            mealDao.insertIngredients(ingredients)
+            mealDao.insertInstructions(instructions)
+        }
+    }
+
+
+
+
     private suspend fun fetchAllRecipes(categories: List<Category>): List<RecipeItem> {
         return coroutineScope {
             categories.map { category ->
                 async(Dispatchers.IO) {
-                    fetchRecipesForCategory(category)
-                }
+                    val cachedMeals = mealDao.getMealsWithDetailsByCategory(category.strCategory)
 
+                    if (cachedMeals.isNotEmpty()) {
+                        Log.d("RecipesFragment", "Loaded category '${category.strCategory}' from cache")
+                        cachedMeals.map { mealWithDetails ->
+                            RecipeItem(
+                                id = mealWithDetails.meal.id,
+                                name = mealWithDetails.meal.name,
+                                imageUrl = mealWithDetails.meal.imageUrl,
+                                area = mealWithDetails.meal.country,
+                                isFavorited = mealWithDetails.meal.isFavorite,
+                                time = mealWithDetails.meal.time,
+                                rating = mealWithDetails.meal.rating,
+                                ratingCount = mealWithDetails.meal.ratingCount,
+                                category = mealWithDetails.meal.category,
+                                ingredients = mealWithDetails.ingredients.map { it.toDomain() },
+                                instructions = mealWithDetails.instructions.map { it.toDomain() }
+                            )
+                        }
+                    } else {
+                        Log.d("RecipesFragment", "Fetching category '${category.strCategory}' from API")
+                        fetchRecipesForCategory(category)
+                    }
+                }
             }.awaitAll().flatten().shuffled()
         }
     }
+
 
 
     private suspend fun fetchRecipesForCategory(category: Category): List<RecipeItem> {
