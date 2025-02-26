@@ -44,8 +44,13 @@ class RecipesAdapter(
                 tvRecipeDuration.text = item.time
                 rbRecipeRating.rating = item.rating
                 tvRatingCount.text = "${item.ratingCount} ratings"
+                val db = AppDatabase.getInstance(context)
+                val favoriteDao = db.favoriteMealDao()
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val isFavorited = favoriteDao.getFavoriteMealDetailsById(item.id) != null
+                    updateFavoriteIcon(isFavorited)
+                }
 
-                updateFavoriteIcon(item.isFavorited)
 
                 ivFavorite.setOnClickListener {
                     val updatedItem = item.copy(isFavorited = !item.isFavorited) // Toggle favorite

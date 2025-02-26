@@ -7,15 +7,18 @@
     android:layout_height="wrap_content"
     android:paddingVertical="12dp">
 
+
     <TextView
         android:id="@+id/tvStepNumber"
         android:layout_width="28dp"
         android:layout_height="28dp"
-        android:background="@drawable/bg_circular_primary"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/bg_circular_secondary"
         android:fontFamily="@font/inter_bold"
         android:gravity="center"
-        android:textColor="@color/white"
-        android:textSize="14sp"
+        android:textColor="@color/black"
+        android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="1" />

@@ -28,6 +28,7 @@ import com.maayn.mealmate.data.remote.api.RetrofitClient
 import com.maayn.mealmate.databinding.FragmentRecipesBinding
 import com.maayn.mealmate.presentation.home.adapters.RecipesAdapter
 import com.maayn.mealmate.presentation.home.model.RecipeItem
+import com.maayn.mealmate.presentation.home.model.toMealWithDetails
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -230,34 +231,10 @@ class RecipesFragment : Fragment() {
     private suspend fun saveRecipesToDatabase(recipes: List<RecipeItem>) {
         withContext(Dispatchers.IO) {
             val meals = recipes.map { recipe ->
-                Meal(
-                    id = recipe.id,
-                    name = recipe.name,
-                    imageUrl = recipe.imageUrl,
-                    country = recipe.area,
-                    isFavorite = recipe.isFavorited,
-                    time = recipe.time,
-                    rating = recipe.rating,
-                    ratingCount = recipe.ratingCount,
-                    category = recipe.category
-                )
+                recipe.toMealWithDetails()
             }
 
-            val ingredients = recipes.flatMap { recipe ->
-                recipe.ingredients.map { ingredient ->
-                    IngredientEntity(mealId = recipe.id, name = ingredient.name, measure = ingredient.measure)
-                }
-            }
-
-            val instructions = recipes.flatMap { recipe ->
-                recipe.instructions.map { instruction ->
-                    InstructionEntity(mealId = recipe.id, step = instruction.step, description = instruction.step)
-                }
-            }
-
-            mealDao.insertMeals(meals)
-            mealDao.insertIngredients(ingredients)
-            mealDao.insertInstructions(instructions)
+           mealDao.insertMealsWithDetails(meals)
         }
     }
 
@@ -328,7 +305,7 @@ class RecipesFragment : Fragment() {
                 // Convert MealWithDetails to RecipeItem
 
 
-                val lol = mealsWithDetails?.map { mealWithDetails ->
+                 mealsWithDetails?.map { mealWithDetails ->
                     RecipeItem(
                         id = mealWithDetails.meal.id,
                         name = mealWithDetails.meal.name,
@@ -344,8 +321,7 @@ class RecipesFragment : Fragment() {
                     )
                 } ?: emptyList()
 
-                Log.e("RecipesFragment", "LOOOL: $lol")
-                lol
+
 
 
             }

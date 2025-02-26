@@ -11,7 +11,7 @@
         android:id="@+id/ingredientIconBackground"
         android:layout_width="36dp"
         android:layout_height="36dp"
-        android:background="@drawable/bg_circular_primary"
+        android:background="@drawable/bg_circular_secondary"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -20,12 +20,12 @@
         android:id="@+id/ivIngredientIcon"
         android:layout_width="20dp"
         android:layout_height="20dp"
-        android:src="@drawable/meal_mate_icon"
+        android:src="@drawable/ingredient"
         app:layout_constraintBottom_toBottomOf="@id/ingredientIconBackground"
         app:layout_constraintEnd_toEndOf="@id/ingredientIconBackground"
         app:layout_constraintStart_toStartOf="@id/ingredientIconBackground"
         app:layout_constraintTop_toTopOf="@id/ingredientIconBackground"
-        app:tint="@color/primary_color_5" />
+        app:tint="@color/black" />
 
     <TextView
         android:id="@+id/tvIngredientName"
