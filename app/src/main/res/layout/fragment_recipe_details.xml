@@ -242,19 +242,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-                <ImageView
-                    android:id="@+id/ivVideoThumbnail"
+                <WebView
+                    android:id="@+id/webViewVideo"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:scaleType="centerCrop"
-                    tools:src="@drawable/meal_mate_icon" />
-
-                <ImageView
-                    android:id="@+id/ivPlayButton"
-                    android:layout_width="60dp"
-                    android:layout_height="60dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/play" />
+                    android:layout_height="250dp"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone"
+                    app:layout_constraintTop_toBottomOf="@id/cardRecipeDetails" />
             </FrameLayout>
         </androidx.cardview.widget.CardView>
 

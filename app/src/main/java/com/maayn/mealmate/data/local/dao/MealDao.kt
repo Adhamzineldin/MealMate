@@ -28,7 +28,12 @@ interface MealDao {
     }
 
     @Transaction
-    suspend fun insertMealsWithDetails(meals: List<MealWithDetails>) {  // ✅ Batch insert for full meal details
+    suspend fun insertMealWithDetails(mealWithDetails: MealWithDetails) {
+        insertMealWithDetails(mealWithDetails.meal, mealWithDetails.ingredients, mealWithDetails.instructions)
+    }
+
+    @Transaction
+    suspend fun insertMealsWithDetails(meals: List<MealWithDetails>) {
         for (mealWithDetails in meals) {
             insertMealWithDetails(mealWithDetails.meal, mealWithDetails.ingredients, mealWithDetails.instructions)
         }
@@ -64,4 +69,8 @@ interface MealDao {
         deleteMealInstructions(mealId)
         deleteMeal(mealId)
     }
+
+    @Transaction
+    @Query("SELECT * FROM meals WHERE id = :mealId LIMIT 1")
+    suspend fun getMealById(mealId: String): Meal?
 }

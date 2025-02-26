@@ -59,6 +59,10 @@
         <action
             android:id="@+id/action_homeFragment_to_favoritesFragment"
             app:destination="@id/favoritesFragment" />
+
+        <action
+            android:id="@+id/action_homeFragment_to_recipeDetailsFragment"
+            app:destination="@id/recipeDetailsFragment" />
     </fragment>
 
     <fragment
@@ -118,6 +122,12 @@
         <action
             android:id="@+id/action_favoritesFragment_to_loginFragment"
             app:destination="@id/loginFragment" />
+
+        <action
+            android:id="@+id/action_favoritesFragment_to_recipeDetailsFragment"
+            app:destination="@id/recipeDetailsFragment" />
+
+
     </fragment>
 
     <fragment

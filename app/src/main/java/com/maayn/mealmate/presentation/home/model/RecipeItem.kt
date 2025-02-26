@@ -1,4 +1,5 @@
 package com.maayn.mealmate.presentation.home.model
+
 import com.maayn.mealmate.data.local.entities.IngredientEntity
 import com.maayn.mealmate.data.local.entities.InstructionEntity
 import com.maayn.mealmate.data.local.entities.Meal
@@ -30,12 +31,25 @@ fun RecipeItem.toMealWithDetails(): MealWithDetails {
         category = this.category,
         country = this.area,
         imageUrl = this.imageUrl,
-        videoUrl = this.youtubeUrl.toString(),
+        videoUrl = this.youtubeUrl ?: "", // Ensure null safety
         isFavorite = this.isFavorited
     )
 
-    val ingredientEntities = this.ingredients.map { IngredientEntity(it.name, it.measure, this.id) }
-    val instructionEntities = this.instructions.map { InstructionEntity(mealId = this.id, step = it.step, description = it.step) }
+    val ingredientEntities = ingredients.map {
+        IngredientEntity(
+            name = it.name,
+            measure = it.measure,
+            mealId = this.id
+        )
+    }
+
+    val instructionEntities = instructions.mapIndexed { index, instruction ->
+        InstructionEntity(
+            mealId = this.id,
+            step = (index + 1).toString(),  // Assign step numbers correctly
+            description = instruction.step
+        )
+    }
 
     return MealWithDetails(
         meal = meal,
@@ -43,4 +57,3 @@ fun RecipeItem.toMealWithDetails(): MealWithDetails {
         instructions = instructionEntities
     )
 }
-

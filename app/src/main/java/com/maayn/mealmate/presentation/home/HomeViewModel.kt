@@ -13,6 +13,7 @@ import com.maayn.mealmate.data.model.extractIngredients
 import com.maayn.mealmate.data.model.extractInstructions
 import com.maayn.mealmate.data.remote.api.RetrofitClient
 import com.maayn.mealmate.presentation.home.model.RecipeItem
+import com.maayn.mealmate.presentation.home.model.toMealWithDetails
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -32,6 +33,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 val today = LocalDate.now().toString()
+
+                firestore.enableNetwork().await()
 
                 val storedMeal = withContext(Dispatchers.IO) {
                     mealOfTheDayDao.getMealOfTheDayDetails(today)
@@ -85,16 +88,27 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     isFavorite = false
                 )
 
-                val ingredients = apiMeal.extractIngredients().map {
-                    IngredientEntity(mealId = mealEntity.id, name = it.name, measure = it.measure)
-                }
-                val instructions = apiMeal.extractInstructions().map {
-                    InstructionEntity(mealId = mealEntity.id, step = it.step, description = it.step)
-                }
+                val ingredients = apiMeal.extractIngredients()
+                val instructions = apiMeal.extractInstructions()
+
+                val recipe_item = RecipeItem(
+                    id = apiMeal.id,
+                    name = apiMeal.name,
+                    imageUrl = apiMeal.imageUrl,
+                    area = apiMeal.area ?: "Unknown",
+                    category = apiMeal.category ?: "Unknown",
+                    youtubeUrl = apiMeal.youtubeUrl,
+                    ingredients = ingredients,
+                    instructions = instructions,
+                    isFavorited = false,
+                    time = "${(10..60).random()} min",
+                    rating = (3..5).random().toFloat(),
+                    ratingCount = (10..500).random()
+                )
 
                 // 🔹 Store data in Firestore and Room
                 firestore.collection("mealOfTheDay").document(today).set(mealEntity).await()
-                mealDao.insertMealWithDetails(mealEntity, ingredients, instructions)
+                mealDao.insertMealWithDetails(recipe_item.toMealWithDetails())
                 mealOfTheDayDao.setMealOfTheDay(MealOfTheDay(mealId = mealEntity.id, date = today))
             }
 

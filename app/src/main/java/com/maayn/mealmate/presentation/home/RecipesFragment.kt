@@ -72,7 +72,7 @@ class RecipesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope) { recipe ->
-            val action = RecipesFragmentDirections.actionRecipeListFragmentToMealDetailsFragment(recipe)
+            val action = RecipesFragmentDirections.actionRecipesFragmentToRecipeDetailsFragment(recipe.id)
             findNavController().navigate(action)
         }
 
@@ -193,28 +193,34 @@ class RecipesFragment : Fragment() {
         val recipes = mutableListOf<RecipeItem>()
 
         repeat(count) {
-            val mealResponse = RetrofitClient.apiService.getRandomMeal() // ✅ Single request per meal
-            val meal = mealResponse.meals?.firstOrNull() ?: return@repeat // Ensure meal exists
+            val mealResponse = RetrofitClient.apiService.getRandomMeal() // Get a random meal
+            val meal = mealResponse.meals?.firstOrNull() ?: return@repeat
+
+            // ✅ Extract ingredients and instructions properly
+            val ingredients = meal.extractIngredients()
+            val instructions = meal.extractInstructions()
 
             recipes.add(
                 RecipeItem(
                     id = meal.id,
                     name = meal.name,
                     imageUrl = meal.imageUrl,
-                    area = meal.area.toString(),
-                    isFavorited = false, // Default to false for new meals
-                    time = "${(10..60).random()} min",// Simulate a time value
-                    rating = (3..5).random().toFloat(), // Simulate a rating
-                    ratingCount = (10..500).random(), // Simulate rating count
-                    category = meal.category.toString(),
-                    ingredients = listOf(),
-                    instructions = listOf()
+                    area = meal.area ?: "Unknown",
+                    category = meal.category ?: "Unknown",
+                    youtubeUrl = meal.youtubeUrl,
+                    ingredients = ingredients,
+                    instructions = instructions,
+                    isFavorited = false,
+                    time = "${(10..60).random()} min",
+                    rating = (3..5).random().toFloat(),
+                    ratingCount = (10..500).random()
                 )
             )
         }
 
         return recipes
     }
+
 
 
 

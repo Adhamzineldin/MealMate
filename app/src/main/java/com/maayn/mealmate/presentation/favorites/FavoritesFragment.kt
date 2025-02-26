@@ -10,13 +10,16 @@ import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.chip.Chip
 import com.maayn.mealmate.core.utils.NetworkMonitor
 import com.maayn.mealmate.data.local.database.AppDatabase
 import com.maayn.mealmate.data.local.entities.toDomain
 import com.maayn.mealmate.data.model.Category
+import com.maayn.mealmate.databinding.FragmentFavoritesBinding
 import com.maayn.mealmate.databinding.FragmentRecipesBinding
+import com.maayn.mealmate.presentation.home.RecipesFragmentDirections
 import com.maayn.mealmate.presentation.home.adapters.RecipesAdapter
 import com.maayn.mealmate.presentation.home.model.RecipeItem
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +35,7 @@ import kotlin.collections.forEach
 import kotlin.time.Duration.Companion.milliseconds
 
 class FavoritesFragment : Fragment() {
-    private var _binding: FragmentRecipesBinding? = null
+    private var _binding: FragmentFavoritesBinding? = null
     private val binding get() = _binding!!
 
 
@@ -51,14 +54,17 @@ class FavoritesFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         Log.d("FavoritesFragment", "onCreateView called")
-        _binding = FragmentRecipesBinding.inflate(inflater, container, false)
+        _binding = FragmentFavoritesBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         Log.d("FavoritesFragment", "onViewCreated called")
-        recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope)
+        recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope) { recipe ->
+            val action = FavoritesFragmentDirections.actionFavoritesFragmentToRecipeDetailsFragment(recipe.id)
+            findNavController().navigate(action)
+        }
         setupUI()
         setupObservers()
         setupListeners()
