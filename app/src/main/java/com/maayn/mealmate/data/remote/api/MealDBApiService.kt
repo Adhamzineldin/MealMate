@@ -1,6 +1,7 @@
 package com.maayn.mealmate.data.remote.api
 
 import com.maayn.mealmate.data.model.CategoryResponse
+import com.maayn.mealmate.data.model.CountryResponse
 import com.maayn.mealmate.data.model.IngredientResponse
 import com.maayn.mealmate.data.model.RecipeResponse
 import retrofit2.Call
@@ -14,6 +15,9 @@ interface MealDBApiService {
 
     @GET("filter.php")
     suspend fun getMealsForCategory(@Query("c") category: String): RecipeResponse
+
+    @GET("list.php?a=list")
+    suspend fun getMealCountries(): CountryResponse
 
     @GET("list.php?i=list")
     suspend fun getPopularIngredients(): IngredientResponse

@@ -75,9 +75,11 @@ class HomeFragment : Fragment() {
         fetchMealOfTheDay()
         setupGreeting()
         fetchCategories()
+        fetchCountries()
         fetchTrendingRecipes()
         fetchPopularIngredients()
         fetchUpcomingPlans()
+
 
     }
 
@@ -147,6 +149,29 @@ class HomeFragment : Fragment() {
                 }
             } catch (e: Exception) {
                handleFailure("Failure: ${e.localizedMessage}")
+            }
+        }
+    }
+
+
+
+    private fun fetchCountries() {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.apiService.getMealCountries()
+                response.meals.let { country ->
+                    val countryItems = country.map {
+                        CategoryItem(it.strArea, "")
+                    }
+                    binding.rvCountries.apply {
+                        layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+                        adapter = CategoriesAdapter(countryItems)
+                    }
+                }
+                Log.e("HomeFragment", "${response.meals}")
+            } catch (e: Exception) {
+                handleFailure("Failure: ${e.localizedMessage}")
+                Log.e("HomeFragment", "${e.localizedMessage}")
             }
         }
     }

@@ -74,17 +74,16 @@ fun ApiMeal.extractIngredients(): List<RecipeItem.Ingredient> {
         .map { RecipeItem.Ingredient(it.first!!, it.second ?: "") }
 }
 
-// Convert instructions into a list of steps
+
 fun ApiMeal.extractInstructions(): List<RecipeItem.Instruction> {
     return instructions?.lineSequence()
         ?.mapIndexedNotNull { _, step ->
             val cleanedStep = step
-                .replace(Regex("(?i)^(STEP|Step)\\s*\\d+[:.-]*\\s*"), "")  // Remove "STEP X:", "Step X."
-                .replace(Regex("^\\d+[).-]\\s*"), "")  // Remove "1.", "1)", "1-" at the beginning
+                .replace(Regex("(?i)^(STEP|Step)\\s*\\d+[:.-]*\\s*"), "")
+                .replace(Regex("^\\d+[).-]\\s*"), "")
                 .trim()  // Trim spaces
 
             if (cleanedStep.isNotEmpty() && !cleanedStep.matches(Regex("^\\d+$"))) {
-                // Ensure it's not just a number (e.g., "1", "2", "3")
                 RecipeItem.Instruction(cleanedStep)
             } else {
                 null  // Ignore empty or number-only steps
