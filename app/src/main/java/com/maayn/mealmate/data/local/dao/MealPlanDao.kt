@@ -1,22 +1,22 @@
 package com.maayn.mealmate.data.local.dao
 
+import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.maayn.mealmate.data.local.entities.MealPlan
 
 @Dao
 interface MealPlanDao {
-    @Insert
-    suspend fun addMealToPlan(mealPlan: MealPlan)
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMealPlans(mealPlans: List<MealPlan>)
+    suspend fun insertMealPlan(mealPlan: MealPlan)
 
-    @Query("SELECT * FROM meal_plans WHERE userId = :userId")
-    suspend fun getMealPlansForUser(userId: String): List<MealPlan>
+    @Query("SELECT * FROM meal_plans ORDER BY id DESC")
+    fun getAllMealPlans(): LiveData<List<MealPlan>>
 
-    @Query("SELECT * FROM meal_plans WHERE userId = :userId AND dayOfWeek = :dayOfWeek")
-    suspend fun getMealPlanForDay(userId: String, dayOfWeek: String): MealPlan?
+    @Update
+    suspend fun updateMealPlan(mealPlan: MealPlan)
 }
+

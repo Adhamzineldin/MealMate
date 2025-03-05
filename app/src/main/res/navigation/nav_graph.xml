@@ -142,6 +142,45 @@
             app:nullable="false" />
     </fragment>
 
+    <fragment
+        android:id="@+id/mealPlanFragment"
+        android:name="com.maayn.mealmate.presentation.mealplan.MealPlanFragment"
+        android:label="Meal Plan"
+        tools:layout="@layout/fragment_meal_plan">
+
+        <!-- Navigation actions -->
+        <action
+            android:id="@+id/action_mealPlanFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+
+        <action
+            android:id="@+id/action_mealPlanFragment_to_recipeDetailsFragment"
+            app:destination="@id/recipeDetailsFragment" />
+
+        <action
+            android:id="@+id/action_mealPlanFragment_to_createMealPlanFragment"
+            app:destination="@id/createMealPlanFragment" />
+
+    </fragment>
+
+
+
+    <fragment
+        android:id="@+id/createMealPlanFragment"
+        android:name="com.maayn.mealmate.presentation.mealplan.CreateMealPlanFragment"
+        android:label="Create Meal Plan">
+
+        <action
+            android:id="@+id/action_createMealPlanFragment_to_selectRecipeFragment"
+            app:destination="@id/selectRecipeFragment"/>
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/selectRecipeFragment"
+        android:name="com.maayn.mealmate.presentation.mealplan.MealPlanFragment"
+        android:label="Select Recipe" />
+
 
 
 </navigation>

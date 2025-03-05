@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_meal_plan -> {
-//                    navController.navigate(R.id.mealPlanFragment)
+                    navController.navigate(R.id.mealPlanFragment)
                     true
                 }
                 R.id.nav_favorites -> {
