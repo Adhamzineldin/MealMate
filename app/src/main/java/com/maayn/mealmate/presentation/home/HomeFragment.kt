@@ -6,13 +6,19 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.Toast
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.maayn.mealmate.R
 import com.maayn.mealmate.core.utils.NetworkMonitor
@@ -47,6 +53,7 @@ class HomeFragment : Fragment() {
     private val apiService = RetrofitClient.apiService
     private lateinit var networkMonitor: NetworkMonitor
     private lateinit var viewModel: HomeViewModel
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -88,9 +95,48 @@ class HomeFragment : Fragment() {
         fetchTrendingRecipes()
         fetchPopularIngredients()
         fetchUpcomingPlans(view)
-
+        initializeSideMenu()
 
     }
+
+    private fun initializeSideMenu() {
+        val btnMenu: ImageButton = requireView().findViewById(R.id.btnMenu)
+        val drawerLayout: DrawerLayout = requireActivity().findViewById(R.id.drawer_layout)
+        val navView: NavigationView = requireActivity().findViewById(R.id.nav_view)
+        btnMenu.setOnClickListener {
+            drawerLayout.openDrawer(GravityCompat.START)
+        }
+        val firebaseAuth = FirebaseAuth.getInstance()
+        navView.setNavigationItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.nav_shopping_list -> {
+                    // Handle Shopping List Click
+                }
+                R.id.nav_profile -> {
+                    if (firebaseAuth.currentUser != null) {
+                        findNavController().navigateSafely(R.id.profileFragment)
+                    } else {
+                        findNavController().navigateSafely(R.id.loginFragment)
+                    }
+                    true
+                }
+
+            }
+            drawerLayout.closeDrawer(GravityCompat.START)
+            true
+        }
+
+    }
+
+    fun NavController.navigateSafely(destinationId: Int) {
+        // Prevent navigation to the same destination
+        if (currentDestination?.id != destinationId) {
+            navigate(destinationId)
+        }
+    }
+
+
+
 
     private fun showNoInternetView() {
         binding.noInternetView.visibility = View.VISIBLE

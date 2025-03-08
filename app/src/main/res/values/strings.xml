@@ -18,5 +18,6 @@
     <string name="add_to_list">Add To List</string>
     <string name="favorite">Favorites\n</string>
     <string name="favorites">Favorites</string>
+    <string name="list">List</string>
 
 </resources>
