@@ -9,7 +9,7 @@ import com.maayn.mealmate.presentation.home.model.CategoryItem
 
 class CategoriesAdapter(
     private val categories: List<CategoryItem>,
-    private val onCategoryClick: (CategoryItem) -> Unit = {}
+    private val onCategoryClick: (CategoryItem) -> Unit
 ) : RecyclerView.Adapter<CategoriesAdapter.CategoryViewHolder>() {
 
     inner class CategoryViewHolder(

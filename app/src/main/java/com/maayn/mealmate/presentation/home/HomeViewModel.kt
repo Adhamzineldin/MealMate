@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import kotlin.random.Random
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -76,35 +77,29 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val apiMeal = response.meals?.firstOrNull() ?: return null
 
             withContext(Dispatchers.IO) {
+                val detailsResponse = RetrofitClient.apiService.getMealDetails(apiMeal.id)
+                val mealDetails = detailsResponse.meals?.firstOrNull()
 
-
+                // Convert API response to Room entities
                 val mealEntity = Meal(
-                    id = apiMeal.id,
-                    name = apiMeal.name,
-                    category = apiMeal.category ?: "Unknown",
-                    country = apiMeal.area ?: "Unknown",
-                    imageUrl = apiMeal.imageUrl,
-                    videoUrl = apiMeal.youtubeUrl.toString(),
-                    isFavorite = false
+                    id = mealDetails?.id ?: "",
+                    name = mealDetails?.name ?: "",
+                    imageUrl = mealDetails?.imageUrl ?: "",
+                    country = mealDetails?.area ?: "Unknown",
+                    isFavorite = false,  // Default to false if not in favorites
+                    time = "${Random.nextInt(10, 61)} minutes",
+                    rating = listOf(1f, 1.5f, 2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f).random(),
+                    ratingCount = Random.nextInt(10, 500),
+                    category = mealDetails?.category.toString()
                 )
 
-                val ingredients = apiMeal.extractIngredients()
-                val instructions = apiMeal.extractInstructions()
+                val ingredients = mealDetails?.extractIngredients()?.map { IngredientEntity(mealId = mealEntity.id, name = it.name, measure = it.measure) } ?: emptyList()
+                val instructions = mealDetails?.extractInstructions()?.map { InstructionEntity(mealId = mealEntity.id, step = it.step, description = it.step) } ?: emptyList()
 
-                val recipe_item = RecipeItem(
-                    id = apiMeal.id,
-                    name = apiMeal.name,
-                    imageUrl = apiMeal.imageUrl,
-                    area = apiMeal.area ?: "Unknown",
-                    category = apiMeal.category ?: "Unknown",
-                    youtubeUrl = apiMeal.youtubeUrl,
-                    ingredients = ingredients,
-                    instructions = instructions,
-                    isFavorited = false,
-                    time = "${(10..60).random()} min",
-                    rating = (3..5).random().toFloat(),
-                    ratingCount = (10..500).random()
-                )
+                val meal = MealWithDetails(meal = mealEntity, ingredients = ingredients, instructions = instructions)
+                val recipe_item = meal.toRecipeItem()
+
+
 
                 // 🔹 Store data in Firestore and Room
                 firestore.collection("mealOfTheDay").document(today).set(mealEntity).await()

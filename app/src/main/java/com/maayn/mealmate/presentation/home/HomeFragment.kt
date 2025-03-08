@@ -250,7 +250,12 @@ class HomeFragment : Fragment() {
                     }
                     binding.rvCategories.apply {
                         layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-                        adapter = CategoriesAdapter(categoryItems)
+                        adapter = CategoriesAdapter(categoryItems,
+                            onCategoryClick = { category ->
+                                val action = HomeFragmentDirections.actionHomeFragmentToFilteredRecipesFragment("category", category.name)
+                                findNavController().navigate(action)
+                            }
+                            )
                     }
                 }
             } catch (e: Exception) {
@@ -309,7 +314,13 @@ class HomeFragment : Fragment() {
                     }
                     binding.rvCountries.apply {
                         layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-                        adapter = CategoriesAdapter(countryItems)
+                        adapter = CategoriesAdapter(countryItems,
+                            onCategoryClick = { category ->
+                                val action = HomeFragmentDirections.actionHomeFragmentToFilteredRecipesFragment("area", category.name)
+                                findNavController().navigate(action)
+                            }
+                        )
+
                     }
                 }
                 Log.e("HomeFragment", "${response.meals}")
@@ -319,6 +330,8 @@ class HomeFragment : Fragment() {
             }
         }
     }
+
+
 
     private fun fetchTrendingRecipes() {
         lifecycleScope.launch {
@@ -418,7 +431,7 @@ class HomeFragment : Fragment() {
                 // Fetch ingredients from API
                 val response = RetrofitClient.apiService.getPopularIngredients()
 
-                val ingredientItems = response.meals.take(10).map { ingredient ->
+                val ingredientItems = response.meals.map { ingredient ->
                     val imageUrl = "https://www.themealdb.com/images/ingredients/${ingredient.strIngredient}.png"
                     val randomGrams = (50..500).random() // Generates a random number between 50 and 500 grams
                     IngredientItem(ingredient.strIngredient, imageUrl, randomGrams)
@@ -427,7 +440,13 @@ class HomeFragment : Fragment() {
                 // Update UI on the main thread
                 binding.rvPopularIngredients.apply {
                     layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-                    adapter = IngredientsAdapter(ingredientItems)
+                    adapter = IngredientsAdapter(ingredientItems,
+                        onItemClick = { ingredient ->
+                            val action = HomeFragmentDirections.actionHomeFragmentToFilteredRecipesFragment("ingredient", ingredient.name)
+                            findNavController().navigate(action)
+                        }
+
+                        )
                 }
 
             } catch (e: Exception) {

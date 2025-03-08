@@ -30,4 +30,11 @@ interface MealDBApiService {
 
     @GET("lookup.php")
     suspend fun getMealDetails(@Query("i") mealId: String): RecipeResponse
+
+    @GET("filter.php")
+    suspend fun getMealsForArea(@Query("a") area: String): RecipeResponse
+
+    @GET("filter.php")
+    suspend fun getMealsForIngredient(@Query("i") ingredient: String): RecipeResponse
 }
+

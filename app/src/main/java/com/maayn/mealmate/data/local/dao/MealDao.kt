@@ -1,6 +1,7 @@
 package com.maayn.mealmate.data.local.dao
 
 import androidx.room.*
+import com.maayn.mealmate.data.local.entities.Ingredient
 import com.maayn.mealmate.data.local.entities.Meal
 import com.maayn.mealmate.data.local.entities.IngredientEntity
 import com.maayn.mealmate.data.local.entities.InstructionEntity
@@ -52,7 +53,20 @@ interface MealDao {
 
     @Transaction
     @Query("SELECT * FROM meals WHERE category = :category")
-    suspend fun getMealsWithDetailsByCategory(category: String): List<MealWithDetails>  // ✅ Added function
+    suspend fun getMealsWithDetailsByCategory(category: String): List<MealWithDetails>
+
+    @Transaction
+    @Query("SELECT * FROM meals WHERE country = :area")
+    suspend fun getMealsWithDetailsByArea(area: String): List<MealWithDetails>
+
+    @Transaction
+    @Query(
+        "SELECT * FROM meals " +
+                "JOIN meal_ingredients ON meals.id = meal_ingredients.mealId " +
+                "WHERE meal_ingredients.name LIKE :ingredient"
+    )
+    suspend fun getMealsWithDetailsByIngredient(ingredient: String): List<MealWithDetails>
+
 
     @Query("DELETE FROM meals WHERE id = :mealId")
     suspend fun deleteMeal(mealId: String)

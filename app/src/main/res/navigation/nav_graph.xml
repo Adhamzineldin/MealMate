@@ -66,6 +66,9 @@
         <action
             android:id="@+id/action_homeFragment_to_createMealPlanFragment"
             app:destination="@id/createMealPlanFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_filteredRecipesFragment"
+            app:destination="@id/filteredRecipesFragment" />
     </fragment>
 
     <fragment
@@ -194,8 +197,31 @@
 
     </fragment>
 
+    <fragment
+        android:id="@+id/filteredRecipesFragment"
+        android:name="com.maayn.mealmate.presentation.search.FilteredRecipesFragment"
+        android:label="Filtered Recipes">
 
+        <argument
+            android:name="filterType"
+            app:argType="string"
+            android:defaultValue="" />
 
+        <argument
+            android:name="filterValue"
+            app:argType="string"
+            android:defaultValue="" />
+
+        <action
+            android:id="@+id/action_filteredRecipesFragment_to_recipeDetailsFragment"
+            app:destination="@id/recipeDetailsFragment" />
+
+        <action
+            android:id="@+id/action_filteredRecipesFragment_to_createMealPlanFragment"
+            app:destination="@id/createMealPlanFragment">
+        </action>
+
+    </fragment>
 
 
 
