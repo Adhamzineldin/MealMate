@@ -110,7 +110,12 @@ class HomeFragment : Fragment() {
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_shopping_list -> {
-                    // Handle Shopping List Click
+                    if (firebaseAuth.currentUser != null) {
+                        findNavController().navigateSafely(R.id.shoppingListFragment)
+                    } else {
+                        findNavController().navigateSafely(R.id.loginFragment)
+                    }
+                    true
                 }
                 R.id.nav_profile -> {
                     if (firebaseAuth.currentUser != null) {

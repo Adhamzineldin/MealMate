@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:padding="16dp">
+
+    <!-- Header -->
+    <TextView
+        android:id="@+id/tvShoppingListTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/inter_bold"
+        android:text="Shopping List"
+        android:textColor="@color/mode"
+        android:textSize="24sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvShoppingListSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="@font/inter_regular"
+        android:text="Manage your ingredients to buy"
+        android:textColor="@color/neutral_color_6"
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvShoppingListTitle" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardAddIngredient"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:layout_constraintTop_toBottomOf="@id/tvShoppingListSubtitle">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp">
+
+            <EditText
+                android:id="@+id/etIngredientName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:fontFamily="@font/inter_regular"
+                android:hint="Add ingredient..."
+                android:inputType="text"
+                android:padding="8dp"
+                android:textColor="@color/mode"
+                android:textSize="16sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/btnAddIngredient"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <ImageButton
+                android:id="@+id/btnAddIngredient"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_circular_secondary"
+                android:contentDescription="Add ingredient"
+                android:src="@drawable/add"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/white" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Empty state -->
+    <LinearLayout
+        android:id="@+id/layoutEmptyState"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="80dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/cardAddIngredient"
+        tools:visibility="visible">
+
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@drawable/shopping_bag"
+            app:tint="@color/neutral_color_6" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/inter_bold"
+            android:text="Your shopping list is empty"
+            android:textColor="@color/mode"
+            android:textSize="18sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="@font/inter_regular"
+            android:gravity="center"
+            android:text="Add ingredients to your shopping list\nto keep track of what you need to buy"
+            android:textColor="@color/neutral_color_6"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- Shopping list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvShoppingList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp"
+        app:layout_constraintBottom_toTopOf="@id/btnClearAll"
+        app:layout_constraintTop_toBottomOf="@id/cardAddIngredient"
+        tools:listitem="@layout/item_shopping_list" />
+
+    <!-- Clear all button -->
+    <Button
+        android:id="@+id/btnClearAll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="84dp"
+        android:backgroundTint="@color/primary_color_5"
+        android:fontFamily="@font/inter_bold"
+        android:padding="12dp"
+        android:text="Clear All Items"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:visibility="visible"
+        app:cornerRadius="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+

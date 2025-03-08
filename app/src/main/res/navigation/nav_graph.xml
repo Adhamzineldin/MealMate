@@ -69,6 +69,9 @@
         <action
             android:id="@+id/action_homeFragment_to_filteredRecipesFragment"
             app:destination="@id/filteredRecipesFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_shoppingListFragment"
+            app:destination="@id/shoppingListFragment" />
     </fragment>
 
     <fragment
@@ -222,7 +225,10 @@
         </action>
 
     </fragment>
-
+    <fragment
+        android:id="@+id/shoppingListFragment"
+        android:name="com.maayn.mealmate.presentation.grocery.ShoppingListFragment"
+        android:label="ShoppingListFragment" />
 
 
 </navigation>

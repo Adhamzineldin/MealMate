@@ -6,13 +6,16 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.chip.Chip
+import com.maayn.mealmate.R
 import com.maayn.mealmate.core.utils.NetworkMonitor
 import com.maayn.mealmate.data.local.database.AppDatabase
 import com.maayn.mealmate.data.local.entities.toDomain
@@ -90,6 +93,9 @@ class FavoritesFragment : Fragment() {
             adapter = recipesAdapter
             setHasFixedSize(true)
         }
+
+
+
     }
 
     private fun setupObservers() {
