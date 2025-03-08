@@ -5,7 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.Toast
+import androidx.appcompat.widget.AppCompatImageButton
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.maayn.mealmate.R
 import com.maayn.mealmate.data.local.entities.MealPlan
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MealPlanFragment : Fragment() {
 
@@ -22,6 +24,7 @@ class MealPlanFragment : Fragment() {
     private lateinit var layoutEmptyState: LinearLayout
     private lateinit var btnAddMealPlan: MaterialButton
     private lateinit var mealPlanAdapter: MealPlanAdapter
+    private lateinit var btnBack: AppCompatImageButton
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -38,6 +41,7 @@ class MealPlanFragment : Fragment() {
         rvMealPlans = view.findViewById(R.id.rvMealPlans)
         layoutEmptyState = view.findViewById(R.id.layoutEmptyState)
         btnAddMealPlan = view.findViewById(R.id.btnAddMealPlan)
+        btnBack = view.findViewById(R.id.btnBack)
 
         // Set up RecyclerView
         mealPlanAdapter = MealPlanAdapter(
@@ -60,7 +64,11 @@ class MealPlanFragment : Fragment() {
             if (mealPlans.isNotEmpty()) {
                 layoutEmptyState.visibility = View.GONE
                 rvMealPlans.visibility = View.VISIBLE
-                mealPlanAdapter.submitList(mealPlans)
+
+                // ✅ Sort meal plans by nearest date
+                val sortedMealPlans = mealPlans.sortedBy { parseDate(it.date) }
+
+                mealPlanAdapter.submitList(sortedMealPlans)
             } else {
                 layoutEmptyState.visibility = View.VISIBLE
                 rvMealPlans.visibility = View.GONE
@@ -73,5 +81,21 @@ class MealPlanFragment : Fragment() {
             findNavController().navigate(action)
         }
 
+        btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
+    }
+
+    // ✅ Helper function to parse date and return Date object
+    private fun parseDate(dateStr: String?): Date? {
+        return try {
+            dateStr?.let {
+                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                sdf.parse(it)
+            }
+        } catch (e: Exception) {
+            null // Return null for invalid dates
+        }
     }
 }

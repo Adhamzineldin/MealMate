@@ -34,7 +34,10 @@ import com.maayn.mealmate.presentation.mealplan.MealPlanFragmentDirections
 import com.maayn.mealmate.presentation.mealplan.MealPlanViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import kotlin.random.Random
+import java.util.Date
+import java.util.Locale
 
 class HomeFragment : Fragment() {
 
@@ -57,18 +60,18 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupNetworkMonitor()
-        setupUI()
+        setupNetworkMonitor(view)
+        setupUI(view)
 
 
     }
 
-    private fun setupNetworkMonitor() {
+    private fun setupNetworkMonitor(view: View) {
         networkMonitor = NetworkMonitor(requireContext()) { isConnected ->
             requireActivity().runOnUiThread {
                 if (isConnected) {
                     showMainContent()
-                    setupUI()
+                    setupUI(view)
                 } else {
                     showNoInternetView()
                 }
@@ -77,14 +80,14 @@ class HomeFragment : Fragment() {
         networkMonitor.register()
     }
 
-    private fun setupUI() {
+    private fun setupUI(view: View) {
         fetchMealOfTheDay()
         setupGreeting()
         fetchCategories()
         fetchCountries()
         fetchTrendingRecipes()
         fetchPopularIngredients()
-        fetchUpcomingPlans()
+        fetchUpcomingPlans(view)
 
 
     }
@@ -117,9 +120,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun fetchUpcomingPlans() {
-        val view = ViewModelProvider(this)[HomeViewModel::class.java]
-
+    private fun fetchUpcomingPlans(view: View) {
         val rvMealPlans = view.findViewById<RecyclerView>(R.id.rvUpcomingPlans)
         val layoutEmptyState = view.findViewById<View>(R.id.layoutEmptyState)
 
@@ -143,18 +144,24 @@ class HomeFragment : Fragment() {
         rvMealPlans.layoutManager = LinearLayoutManager(requireContext())
         rvMealPlans.adapter = mealPlanAdapter
 
-        // Observe LiveData on the main thread
-        mealPlanDao.getAllMealPlans().observe(viewLifecycleOwner) { mealPlans ->
+        // Get today's date in "DD/MM/YYYY" format
+        val today = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+
+        // Observe LiveData and filter for the nearest meal plan
+        mealPlanDao.getUpcomingMealPlans(today).observe(viewLifecycleOwner) { mealPlans ->
             if (mealPlans.isNotEmpty()) {
                 layoutEmptyState.visibility = View.GONE
                 rvMealPlans.visibility = View.VISIBLE
-                mealPlanAdapter.submitList(mealPlans)
+
+                // Only show the nearest meal plan
+                mealPlanAdapter.submitList(listOf(mealPlans.first()))
             } else {
                 layoutEmptyState.visibility = View.VISIBLE
                 rvMealPlans.visibility = View.GONE
             }
         }
     }
+
 
 
 

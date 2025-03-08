@@ -16,6 +16,10 @@ interface MealPlanDao {
     @Query("SELECT * FROM meal_plans ORDER BY id DESC")
     fun getAllMealPlans(): LiveData<List<MealPlan>>
 
+    @Query("SELECT * FROM meal_plans WHERE date >= :today ORDER BY date ASC")
+    fun getUpcomingMealPlans(today: String): LiveData<List<MealPlan>>
+
+
     @Update
     suspend fun updateMealPlan(mealPlan: MealPlan)
 }

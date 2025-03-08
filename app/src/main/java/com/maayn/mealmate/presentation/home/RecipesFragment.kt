@@ -344,8 +344,13 @@ class RecipesFragment : Fragment() {
 
     private fun setupCategoryChips(categories: List<Category>) {
         binding.chipGroup.removeAllViews()
-        addChip("All", true)
-        categories.forEach { addChip(it.strCategory, false) }
+        categories.forEachIndexed  { index, category ->
+            if (index == 0) {
+                currentCategory.value = category.strCategory
+                addChip(category.strCategory, true)
+            }
+            else addChip(category.strCategory, false)
+        }
     }
 
     private fun addChip(label: String, isSelected: Boolean) {
