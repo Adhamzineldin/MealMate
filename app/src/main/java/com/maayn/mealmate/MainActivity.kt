@@ -4,7 +4,9 @@ package com.maayn.mealmate
 import android.os.Bundle
 import android.os.StrictMode
 import android.view.View
+import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.marginBottom
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
@@ -96,10 +98,24 @@ class MainActivity : AppCompatActivity() {
         // Add DestinationChangedListener to show/hide bottom navigation
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
-                R.id.loginFragment, R.id.signupFragment -> binding.bottomNavigationFragment.visibility = View.GONE
-                else -> binding.bottomNavigationFragment.visibility = View.VISIBLE
+                R.id.loginFragment, R.id.signupFragment -> {
+                    // Remove bottom margin when on login or signup fragment
+                    val layoutParams = binding.navHostFragment.layoutParams as ViewGroup.MarginLayoutParams
+                    layoutParams.bottomMargin = 0
+                    binding.navHostFragment.layoutParams = layoutParams
+                }
+                else -> {
+                    // Set bottom margin to some value (e.g., 60dp)
+                    val bottomMarginInDp = 85
+                    val bottomMarginInPx = (bottomMarginInDp * resources.displayMetrics.density).toInt()
+
+                    val layoutParams = binding.navHostFragment.layoutParams as ViewGroup.MarginLayoutParams
+                    layoutParams.bottomMargin = bottomMarginInPx
+                    binding.navHostFragment.layoutParams = layoutParams
+                }
             }
         }
+
     }
 
     override fun onBackPressed() {
