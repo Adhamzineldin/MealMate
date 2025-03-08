@@ -63,6 +63,9 @@
         <action
             android:id="@+id/action_homeFragment_to_recipeDetailsFragment"
             app:destination="@id/recipeDetailsFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_createMealPlanFragment"
+            app:destination="@id/createMealPlanFragment" />
     </fragment>
 
     <fragment
@@ -102,6 +105,9 @@
         <action
             android:id="@+id/action_recipesFragment_to_favoritesFragment"
             app:destination="@id/favoritesFragment" />
+        <action
+            android:id="@+id/action_recipesFragment_to_createMealPlanFragment"
+            app:destination="@id/createMealPlanFragment" />
     </fragment>
     <fragment
         android:id="@+id/favoritesFragment"
@@ -126,6 +132,9 @@
         <action
             android:id="@+id/action_favoritesFragment_to_recipeDetailsFragment"
             app:destination="@id/recipeDetailsFragment" />
+        <action
+            android:id="@+id/action_favoritesFragment_to_createMealPlanFragment"
+            app:destination="@id/createMealPlanFragment" />
 
 
     </fragment>
@@ -160,6 +169,10 @@
         <action
             android:id="@+id/action_mealPlanFragment_to_createMealPlanFragment"
             app:destination="@id/createMealPlanFragment" />
+        <action
+            android:id="@+id/action_mealPlanFragment_to_createMealPlanFragment2"
+            app:destination="@id/createMealPlanFragment" />
+
 
     </fragment>
 
@@ -170,16 +183,19 @@
         android:name="com.maayn.mealmate.presentation.mealplan.CreateMealPlanFragment"
         android:label="Create Meal Plan">
 
-        <action
-            android:id="@+id/action_createMealPlanFragment_to_selectRecipeFragment"
-            app:destination="@id/selectRecipeFragment"/>
+        <argument
+            android:name="mealPlan"
+            app:argType="com.maayn.mealmate.data.local.entities.MealPlan"
+            app:nullable="true" />
+
+        <action android:id="@+id/action_createMealPlanFragment_to_mealPlanFragment"
+            app:destination="@+id/mealPlanFragment" />
+
 
     </fragment>
 
-    <fragment
-        android:id="@+id/selectRecipeFragment"
-        android:name="com.maayn.mealmate.presentation.mealplan.MealPlanFragment"
-        android:label="Select Recipe" />
+
+
 
 
 

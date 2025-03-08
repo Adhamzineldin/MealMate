@@ -61,10 +61,20 @@ class FavoritesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         Log.d("FavoritesFragment", "onViewCreated called")
-        recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope) { recipe ->
-            val action = FavoritesFragmentDirections.actionFavoritesFragmentToRecipeDetailsFragment(recipe.id)
-            findNavController().navigate(action)
-        }
+        recipesAdapter = RecipesAdapter(
+            requireContext(),
+            viewLifecycleOwner.lifecycleScope,
+            emptyList(), // or provide the actual list of recipes
+            onRecipeClick = { recipe ->
+                val action = FavoritesFragmentDirections.actionFavoritesFragmentToRecipeDetailsFragment(recipe.id)
+                findNavController().navigate(action)
+            },
+            onCreateMealPlanButtonClick = { mealPlan ->
+                val action = FavoritesFragmentDirections.actionFavoritesFragmentToCreateMealPlanFragment(mealPlan)
+                findNavController().navigate(action)
+            }
+        )
+
         setupUI()
         setupObservers()
         setupListeners()

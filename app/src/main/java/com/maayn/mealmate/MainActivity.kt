@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
             .build()
         firestore.firestoreSettings = settings
 
-
+        val firebaseAuth = FirebaseAuth.getInstance()
 
         // Handle navigation item selection
         bottomNav.setOnItemSelectedListener { item ->
@@ -54,11 +54,19 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_meal_plan -> {
-                    navController.navigate(R.id.mealPlanFragment)
+                    if (firebaseAuth.currentUser != null) {
+                        navController.navigateSafely(R.id.mealPlanFragment)
+                    } else {
+                        navController.navigateSafely(R.id.loginFragment)
+                    }
                     true
                 }
                 R.id.nav_favorites -> {
-                    navController.navigateSafely(R.id.favoritesFragment)
+                    if (firebaseAuth.currentUser != null) {
+                        navController.navigateSafely(R.id.favoritesFragment)
+                    } else {
+                        navController.navigateSafely(R.id.loginFragment)
+                    }
                     true
                 }
                 R.id.nav_recipes -> {
@@ -66,13 +74,9 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_profile -> {
-                    val firebaseAuth = FirebaseAuth.getInstance()
-
                     if (firebaseAuth.currentUser != null) {
-                        // User is logged in, navigate to the profile fragment
                         navController.navigateSafely(R.id.profileFragment)
                     } else {
-                        // User is not logged in, navigate to the login fragment
                         navController.navigateSafely(R.id.loginFragment)
                     }
                     true

@@ -12,7 +12,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
+import com.maayn.mealmate.R
 import com.maayn.mealmate.core.utils.NetworkMonitor
 import com.maayn.mealmate.data.local.database.AppDatabase
 import com.maayn.mealmate.data.model.extractIngredients
@@ -27,6 +29,10 @@ import com.maayn.mealmate.presentation.favorites.FavoritesFragmentDirections
 import com.maayn.mealmate.presentation.home.adapters.CategoriesAdapter
 import com.maayn.mealmate.presentation.home.adapters.IngredientsAdapter
 import com.maayn.mealmate.presentation.home.model.toMealWithDetails
+import com.maayn.mealmate.presentation.mealplan.MealPlanAdapter
+import com.maayn.mealmate.presentation.mealplan.MealPlanFragmentDirections
+import com.maayn.mealmate.presentation.mealplan.MealPlanViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
@@ -112,8 +118,45 @@ class HomeFragment : Fragment() {
     }
 
     private fun fetchUpcomingPlans() {
+        val view = ViewModelProvider(this)[HomeViewModel::class.java]
 
+        val rvMealPlans = view.findViewById<RecyclerView>(R.id.rvUpcomingPlans)
+        val layoutEmptyState = view.findViewById<View>(R.id.layoutEmptyState)
+
+        val db = AppDatabase.getInstance(requireContext()) // Access the database
+        val mealPlanDao = db.mealPlanDao()
+
+        // Set up RecyclerView Adapter
+        val mealPlanAdapter = MealPlanAdapter(
+            onStartCookingClick = { mealPlan ->
+                val action = MealPlanFragmentDirections
+                    .actionMealPlanFragmentToRecipeDetailsFragment(mealPlan.recipeId)
+                findNavController().navigate(action)
+            },
+            onEditClick = { mealPlan ->
+                val action = MealPlanFragmentDirections
+                    .actionMealPlanFragmentToCreateMealPlanFragment(mealPlan)
+                findNavController().navigate(action)
+            }
+        )
+
+        rvMealPlans.layoutManager = LinearLayoutManager(requireContext())
+        rvMealPlans.adapter = mealPlanAdapter
+
+        // Observe LiveData on the main thread
+        mealPlanDao.getAllMealPlans().observe(viewLifecycleOwner) { mealPlans ->
+            if (mealPlans.isNotEmpty()) {
+                layoutEmptyState.visibility = View.GONE
+                rvMealPlans.visibility = View.VISIBLE
+                mealPlanAdapter.submitList(mealPlans)
+            } else {
+                layoutEmptyState.visibility = View.VISIBLE
+                rvMealPlans.visibility = View.GONE
+            }
+        }
     }
+
+
 
     private fun fetchMealOfTheDay() {
         viewModel = ViewModelProvider(this)[HomeViewModel::class.java]
@@ -122,10 +165,20 @@ class HomeFragment : Fragment() {
         viewModel.mealOfTheDay.observe(viewLifecycleOwner) { meal ->
             meal?.let {
                 binding.rvMealOfTheDay.layoutManager = LinearLayoutManager(requireContext())
-                binding.rvMealOfTheDay.adapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope, listOf(it)) { recipe ->
-                    val action = HomeFragmentDirections.actionHomeFragmentToRecipeDetailsFragment(recipe.id)
-                    findNavController().navigate(action)
-                }
+                binding.rvMealOfTheDay.adapter = RecipesAdapter(
+                    requireContext(),
+                    viewLifecycleOwner.lifecycleScope,
+                    listOf(it),
+                    onRecipeClick = { recipe ->
+                        val action = HomeFragmentDirections.actionHomeFragmentToRecipeDetailsFragment(recipe.id)
+                        findNavController().navigate(action)
+                    },
+                    onCreateMealPlanButtonClick = { mealPlan ->
+                        val action = HomeFragmentDirections.actionHomeFragmentToCreateMealPlanFragment(mealPlan)
+                        findNavController().navigate(action)
+                    }
+                )
+
             }
         }
 
@@ -155,13 +208,51 @@ class HomeFragment : Fragment() {
 
 
 
+
     private fun fetchCountries() {
         lifecycleScope.launch {
             try {
+                val countryCodeMap = mapOf(
+                    "American" to "US",
+                    "British" to "GB",
+                    "Canadian" to "CA",
+                    "Chinese" to "CN",
+                    "Croatian" to "HR",
+                    "Dutch" to "NL",
+                    "Egyptian" to "EG",
+                    "Filipino" to "PH",
+                    "French" to "FR",
+                    "Greek" to "GR",
+                    "Indian" to "IN",
+                    "Irish" to "IE",
+                    "Italian" to "IT",
+                    "Jamaican" to "JM",
+                    "Japanese" to "JP",
+                    "Kenyan" to "KE",
+                    "Malaysian" to "MY",
+                    "Mexican" to "MX",
+                    "Moroccan" to "MA",
+                    "Polish" to "PL",
+                    "Portuguese" to "PT",
+                    "Russian" to "RU",
+                    "Spanish" to "ES",
+                    "Thai" to "TH",
+                    "Tunisian" to "TN",
+                    "Turkish" to "TR",
+                    "Ukrainian" to "UA",
+                    "Uruguayan" to "UY",
+                    "Vietnamese" to "VN"
+                )
+
+
                 val response = RetrofitClient.apiService.getMealCountries()
+
+
                 response.meals.let { country ->
+
                     val countryItems = country.map {
-                        CategoryItem(it.strArea, "")
+                        val countryCode = countryCodeMap[it.strArea] ?: "unknown"
+                        CategoryItem(it.strArea, "https://www.themealdb.com/images/icons/flags/big/64/${countryCode}.png")
                     }
                     binding.rvCountries.apply {
                         layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
@@ -238,10 +329,20 @@ class HomeFragment : Fragment() {
                 // Update RecyclerView
                 binding.rvTrendingRecipes.apply {
                     layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-                    adapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope, recipeItems) { recipe ->
-                        val action = HomeFragmentDirections.actionHomeFragmentToRecipeDetailsFragment(recipe.id)
-                        findNavController().navigate(action)
-                    }
+                    adapter = RecipesAdapter(
+                        requireContext(),
+                        viewLifecycleOwner.lifecycleScope,
+                        recipeItems,
+                        onRecipeClick = { recipe ->
+                            val action = HomeFragmentDirections.actionHomeFragmentToRecipeDetailsFragment(recipe.id)
+                            findNavController().navigate(action)
+                        },
+                        onCreateMealPlanButtonClick = { mealPlan ->
+                            val action = HomeFragmentDirections.actionHomeFragmentToCreateMealPlanFragment(mealPlan)
+                            findNavController().navigate(action)
+                        }
+                    )
+
                 }
 
             } catch (e: Exception) {
@@ -254,7 +355,6 @@ class HomeFragment : Fragment() {
 
 
     private fun handleFailure(message: String) {
-        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
         Log.e("Toast", message)
     }
 

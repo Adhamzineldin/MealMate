@@ -40,7 +40,18 @@ class MealPlanFragment : Fragment() {
         btnAddMealPlan = view.findViewById(R.id.btnAddMealPlan)
 
         // Set up RecyclerView
-        mealPlanAdapter = MealPlanAdapter()
+        mealPlanAdapter = MealPlanAdapter(
+            onStartCookingClick = { mealPlan ->
+                val action = MealPlanFragmentDirections
+                    .actionMealPlanFragmentToRecipeDetailsFragment(mealPlan.recipeId)
+                findNavController().navigate(action)
+            },
+            onEditClick = { mealPlan ->
+                val action = MealPlanFragmentDirections
+                    .actionMealPlanFragmentToCreateMealPlanFragment(mealPlan)
+                findNavController().navigate(action)
+            }
+        )
         rvMealPlans.layoutManager = LinearLayoutManager(requireContext())
         rvMealPlans.adapter = mealPlanAdapter
 
@@ -58,7 +69,8 @@ class MealPlanFragment : Fragment() {
 
         // Handle Add Meal Plan button click
         btnAddMealPlan.setOnClickListener {
-            findNavController().navigate(R.id.action_mealPlanFragment_to_createMealPlanFragment)
+            val action = MealPlanFragmentDirections.actionMealPlanFragmentToCreateMealPlanFragment(null)
+            findNavController().navigate(action)
         }
 
     }

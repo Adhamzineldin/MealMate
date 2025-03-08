@@ -72,10 +72,20 @@ class RecipesFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        recipesAdapter = RecipesAdapter(requireContext(), viewLifecycleOwner.lifecycleScope) { recipe ->
-            val action = RecipesFragmentDirections.actionRecipesFragmentToRecipeDetailsFragment(recipe.id)
-            findNavController().navigate(action)
-        }
+        recipesAdapter = RecipesAdapter(
+            requireContext(),
+            viewLifecycleOwner.lifecycleScope,
+            recipes = emptyList(), // You might want to pass actual recipe items here
+            onRecipeClick = { recipe ->
+                val action = RecipesFragmentDirections.actionRecipesFragmentToRecipeDetailsFragment(recipe.id)
+                findNavController().navigate(action)
+            },
+            onCreateMealPlanButtonClick = { mealPlan ->
+                val action = RecipesFragmentDirections.actionRecipesFragmentToCreateMealPlanFragment(mealPlan)
+                findNavController().navigate(action)
+            }
+        )
+
 
         setupNetworkMonitor()
         setupUI()

@@ -5,7 +5,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.lifecycle.LifecycleCoroutineScope
-import androidx.navigation.findNavController
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -14,6 +13,7 @@ import com.maayn.mealmate.databinding.ItemRecipeBinding
 import com.maayn.mealmate.presentation.home.model.RecipeItem
 import com.maayn.mealmate.R
 import com.maayn.mealmate.data.local.database.AppDatabase
+import com.maayn.mealmate.data.local.entities.MealPlan
 import com.maayn.mealmate.presentation.home.model.toMealWithDetails
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,7 +22,8 @@ class RecipesAdapter(
     private val context: Context,
     private val lifecycleScope: LifecycleCoroutineScope,
     private var recipes: List<RecipeItem>? = emptyList(),
-    private val onRecipeClick: (RecipeItem) -> Unit // Click listener added
+    private val onRecipeClick: (RecipeItem) -> Unit,
+    private val onCreateMealPlanButtonClick: (MealPlan) -> Unit
 ) : ListAdapter<RecipeItem, RecipesAdapter.RecipeViewHolder>(RecipeDiffCallback()) {
 
     init {
@@ -68,8 +69,18 @@ class RecipesAdapter(
         }
 
         private fun onCreateMealPlanButtonClick(item: RecipeItem) {
-            Log.e("click", "onCreateMealPlanButtonClick: ${item.name}")
+            val mealPlan = MealPlan(
+                id = null,
+                name = "",
+                date = null,
+                mealType = "breakfast",
+                recipeName = item.name,
+                recipeImage = item.imageUrl,
+                recipeId = item.id
+            )
+            onCreateMealPlanButtonClick(mealPlan)
         }
+
 
         private fun updateFavoriteInDatabase(updatedItem: RecipeItem) {
             val updatedItemAndClass = updatedItem.toMealWithDetails()
