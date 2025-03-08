@@ -10,11 +10,18 @@ import androidx.core.view.marginBottom
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.maayn.mealmate.data.remote.firebase.SyncWorker
 import com.maayn.mealmate.databinding.ActivityMainBinding
+import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity() {
@@ -26,7 +33,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        scheduleSyncWorker()
         // Make status bar icons dark (for better visibility on white background)
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 
@@ -88,6 +95,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
+    private fun scheduleSyncWorker() {
+        val workRequest = PeriodicWorkRequestBuilder<SyncWorker>(6, TimeUnit.HOURS)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED) // Requires internet
+                    .build()
+            )
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "SyncWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
+    }
+
     override fun onStart() {
         super.onStart()
 
@@ -103,6 +127,7 @@ class MainActivity : AppCompatActivity() {
                     val layoutParams = binding.navHostFragment.layoutParams as ViewGroup.MarginLayoutParams
                     layoutParams.bottomMargin = 0
                     binding.navHostFragment.layoutParams = layoutParams
+                    binding.bottomNavigationFragment.visibility = View.GONE
                 }
                 else -> {
                     // Set bottom margin to some value (e.g., 60dp)
@@ -112,6 +137,7 @@ class MainActivity : AppCompatActivity() {
                     val layoutParams = binding.navHostFragment.layoutParams as ViewGroup.MarginLayoutParams
                     layoutParams.bottomMargin = bottomMarginInPx
                     binding.navHostFragment.layoutParams = layoutParams
+                    binding.bottomNavigationFragment.visibility = View.VISIBLE
                 }
             }
         }
