@@ -1,16 +1,24 @@
 package com.maayn.mealmate.presentation.home.adapters
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.maayn.mealmate.data.local.database.AppDatabase
+import com.maayn.mealmate.data.local.entities.ShoppingItem
 import com.maayn.mealmate.databinding.ItemIngredientBinding
 import com.maayn.mealmate.presentation.home.model.IngredientItem
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import java.util.UUID
 
 class IngredientsAdapter(
+    private val context: Context,
+    private val coroutineScope: CoroutineScope,
     private val ingredients: List<IngredientItem>,
     private val onItemClick: (IngredientItem) -> Unit,  // Click listener for item/image
-    private val onButtonClick: (IngredientItem) -> Unit  = {}
+
 ) : RecyclerView.Adapter<IngredientsAdapter.IngredientViewHolder>() {
 
     inner class IngredientViewHolder(private val binding: ItemIngredientBinding) :
@@ -33,6 +41,15 @@ class IngredientsAdapter(
                 btnAddToList.setOnClickListener { onButtonClick(item) } // Replace 'btnAction' with actual button ID
             }
         }
+    }
+
+    fun onButtonClick(item: IngredientItem) {
+        coroutineScope.launch {
+            val db = AppDatabase.getInstance(context)
+            val shoppingItem = ShoppingItem(UUID.randomUUID().toString(), item.name)
+            db.shoppingItemDao().insert(shoppingItem)
+        }
+
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): IngredientViewHolder {

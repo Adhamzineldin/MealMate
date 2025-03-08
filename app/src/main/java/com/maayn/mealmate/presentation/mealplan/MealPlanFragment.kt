@@ -8,6 +8,7 @@ import android.widget.LinearLayout
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -45,6 +46,8 @@ class MealPlanFragment : Fragment() {
 
         // Set up RecyclerView
         mealPlanAdapter = MealPlanAdapter(
+            requireContext(),
+            viewLifecycleOwner.lifecycleScope,
             onStartCookingClick = { mealPlan ->
                 val action = MealPlanFragmentDirections
                     .actionMealPlanFragmentToRecipeDetailsFragment(mealPlan.recipeId)

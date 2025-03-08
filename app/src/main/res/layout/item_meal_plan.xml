@@ -26,8 +26,6 @@
             app:layout_constraintTop_toTopOf="parent"
             tools:text="Weekly Healthy Meals" />
 
-
-
         <!-- Date and Meal Type -->
         <TextView
             android:id="@+id/tvDateMealType"
@@ -117,5 +115,22 @@
                 android:textColor="@color/white"
                 app:cornerRadius="8dp" />
         </LinearLayout>
+
+        <!-- Add Ingredients to Shopping List Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddToShoppingList"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_weight="1"
+            android:text="Add Ingredients to Shopping List"
+            android:textAllCaps="false"
+            android:backgroundTint="@color/primary_color_5"
+            android:textColor="@color/white"
+            app:cornerRadius="8dp"
+            app:layout_constraintTop_toBottomOf="@id/layoutQuickActions"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

@@ -10,8 +10,8 @@ import com.maayn.mealmate.data.local.entities.*
 
 @Database(
     entities = [Meal::class, FavoriteMeal::class, MealPlan::class, Ingredient::class, ShoppingList::class,
-        MealOfTheDay::class, InstructionEntity::class, IngredientEntity::class],
-    version = 10
+        MealOfTheDay::class, InstructionEntity::class, IngredientEntity::class, ShoppingItem::class],
+    version = 12
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -21,6 +21,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun ingredientDao(): IngredientDao
     abstract fun shoppingListDao(): ShoppingListDao
     abstract fun mealOfTheDayDao(): MealOfTheDayDao
+    abstract fun shoppingItemDao(): ShoppingItemDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null

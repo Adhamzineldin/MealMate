@@ -180,6 +180,8 @@ class HomeFragment : Fragment() {
 
         // Set up RecyclerView Adapter
         val mealPlanAdapter = MealPlanAdapter(
+            requireContext(),
+            viewLifecycleOwner.lifecycleScope,
             onStartCookingClick = { mealPlan ->
                 val action = MealPlanFragmentDirections
                     .actionMealPlanFragmentToRecipeDetailsFragment(mealPlan.recipeId)
@@ -445,7 +447,9 @@ class HomeFragment : Fragment() {
                 // Update UI on the main thread
                 binding.rvPopularIngredients.apply {
                     layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-                    adapter = IngredientsAdapter(ingredientItems,
+                    adapter = IngredientsAdapter(requireContext(),
+                        viewLifecycleOwner.lifecycleScope,
+                        ingredientItems,
                         onItemClick = { ingredient ->
                             val action = HomeFragmentDirections.actionHomeFragmentToFilteredRecipesFragment("ingredient", ingredient.name)
                             findNavController().navigate(action)

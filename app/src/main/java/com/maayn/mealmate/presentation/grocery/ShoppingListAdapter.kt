@@ -9,6 +9,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.maayn.mealmate.R
+import com.maayn.mealmate.data.local.entities.ShoppingItem
 
 class ShoppingListAdapter(
     private var shoppingItems: MutableList<ShoppingItem>,
