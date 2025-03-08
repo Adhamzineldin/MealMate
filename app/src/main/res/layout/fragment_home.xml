@@ -234,7 +234,7 @@
                     android:gravity="center"
                     android:orientation="vertical"
                     android:visibility="gone"
-                    app:layout_constraintTop_toBottomOf="@id/btnAddMealPlan">
+                    app:layout_constraintTop_toBottomOf="@id/tvUpcomingPlansTitle">
 
                     <ImageView
                         android:layout_width="120dp"
@@ -283,6 +283,14 @@
                     app:layout_constraintTop_toBottomOf="@id/tvUpcomingPlansTitle" />
 
                 <!-- Trending Recipes Section -->
+                <androidx.constraintlayout.widget.Barrier
+                    android:id="@+id/barrierTrendingRecipes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:barrierDirection="bottom"
+                    app:constraint_referenced_ids="rvUpcomingPlans,layoutEmptyState" />
+
+                <!-- Trending Recipes Title -->
                 <TextView
                     android:id="@+id/tvTrendingRecipesTitle"
                     android:layout_width="wrap_content"
@@ -293,7 +301,7 @@
                     android:textColor="@color/mode"
                     android:textSize="18sp"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/rvUpcomingPlans" />
+                    app:layout_constraintTop_toBottomOf="@id/barrierTrendingRecipes" />
 
                 <TextView
                     android:id="@+id/tvTrendingRecipesViewAll"
