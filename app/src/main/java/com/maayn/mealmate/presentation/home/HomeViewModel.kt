@@ -27,7 +27,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun fetchMealOfTheDay() {
         viewModelScope.launch {
             try {
-                val today = LocalDate.now().toString()3
+                val today = LocalDate.now().toString()
 
                 // 🔥 Ensure data is up-to-date before fetching from local DB
                 syncingMealOfTheDayDao.syncFromFirebase()
