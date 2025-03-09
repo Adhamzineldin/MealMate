@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.map
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.maayn.mealmate.data.local.dao.MealPlanDao
 import com.maayn.mealmate.data.local.entities.MealPlan
 import kotlinx.coroutines.CoroutineScope
@@ -58,13 +59,15 @@ class SyncingMealPlanDao(
     override suspend fun updateMealPlan(mealPlan: MealPlan) {
         mealPlanDao.updateMealPlan(mealPlan) // Update locally
 
-        // Sync updated meal plan to Firebase
-        CoroutineScope(Dispatchers.IO).launch {
-            mealPlan.firebaseId?.let {
-                firestore.collection("meal_plans").document(it).set(mealPlan)
+        mealPlan.firebaseId?.let { firebaseId ->
+            CoroutineScope(Dispatchers.IO).launch {
+                firestore.collection("meal_plans")
+                    .document(firebaseId)
+                    .set(mealPlan, SetOptions.merge()) // Merge instead of overwrite
             }
         }
     }
+
 
     override suspend fun deleteMealPlan(mealPlan: MealPlan) {
         mealPlanDao.deleteMealPlan(mealPlan) // Delete locally

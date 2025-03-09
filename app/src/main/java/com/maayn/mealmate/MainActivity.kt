@@ -22,6 +22,7 @@ import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingMealPlanDao
 import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingShoppingItemDao
 import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingShoppingListDao
 import com.maayn.mealmate.databinding.ActivityMainBinding
+import com.maayn.mealmate.presentation.splash.LoadingFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
@@ -78,6 +79,9 @@ class MainActivity : AppCompatActivity() {
 
     // 🔹 Sync data from Firestore to local Room database
     private fun syncDataFromFirestore() {
+        val loadingFragment = LoadingFragment()
+        loadingFragment.show(supportFragmentManager, "loading")
+
         lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getInstance(this@MainActivity)
             val firestore = FirebaseFirestore.getInstance()
@@ -104,8 +108,13 @@ class MainActivity : AppCompatActivity() {
             syncingIngredientDao.syncFromFirebase()
             syncingMealOfTheDayDao.syncFromFirebase()
 
+            // Dismiss loading screen after sync completes
+            launch(Dispatchers.Main) {
+                loadingFragment.dismiss()
+            }
         }
     }
+
 
 
     // 🔹 Manage Bottom Navigation visibility based on destination
