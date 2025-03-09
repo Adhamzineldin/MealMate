@@ -13,24 +13,23 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.facebook.*
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
-import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.*
 import com.maayn.mealmate.R
 import com.maayn.mealmate.databinding.FragmentLoginBinding
-import com.maayn.mealmate.presentation.home.HomeFragment
 
 class LoginFragment : Fragment() {
     private var _binding: FragmentLoginBinding? = null
     private val binding get() = _binding!!
     private lateinit var googleSignInClient: GoogleSignInClient
+    private lateinit var callbackManager: CallbackManager
     private val auth = FirebaseAuth.getInstance()
 
     private val googleSignInLauncher = registerForActivityResult(
@@ -39,14 +38,16 @@ class LoginFragment : Fragment() {
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(ApiException::class.java)
-            // If successful, get the ID token and call firebaseAuthWithGoogle
             account?.idToken?.let { firebaseAuthWithGoogle(it) }
         } catch (e: ApiException) {
-            // Handle error
             Toast.makeText(requireContext(), "Google Sign-In failed: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        FacebookSdk.sdkInitialize(requireContext())
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -60,12 +61,12 @@ class LoginFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-
         if (auth.currentUser != null) {
             navigateToHome()
-            return // Prevent further execution
+            return
         }
         setupGoogleSignIn()
+        setupFacebookSignIn()
         setupClickListeners()
         setupTextWatchers()
     }
@@ -76,6 +77,25 @@ class LoginFragment : Fragment() {
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(requireActivity(), gso)
+    }
+
+    private fun setupFacebookSignIn() {
+        callbackManager = CallbackManager.Factory.create()
+
+        LoginManager.getInstance().registerCallback(callbackManager,
+            object : FacebookCallback<LoginResult> {
+                override fun onSuccess(result: LoginResult) {
+                    handleFacebookAccessToken(result.accessToken)
+                }
+
+                override fun onCancel() {
+                    Log.d("FacebookLogin", "Login canceled.")
+                }
+
+                override fun onError(error: FacebookException) {
+                    Log.e("FacebookLogin", "Error: ${error.message}")
+                }
+            })
     }
 
     private fun setupClickListeners() {
@@ -91,12 +111,18 @@ class LoginFragment : Fragment() {
             }
         }
 
-        binding.guestButton.setOnClickListener{
+        binding.guestButton.setOnClickListener {
             navigateToHome()
         }
 
         binding.googleButton.setOnClickListener {
             googleSignInLauncher.launch(googleSignInClient.signInIntent)
+        }
+
+        binding.facebookButton.setOnClickListener {
+            LoginManager.getInstance().logInWithReadPermissions(
+                this, listOf("email", "public_profile")
+            )
         }
 
         binding.signUpLink.setOnClickListener {
@@ -123,7 +149,7 @@ class LoginFragment : Fragment() {
         val isPasswordFilled = binding.passwordInput.text.toString().isNotEmpty()
 
         if (isEmailFilled && isPasswordFilled) {
-            binding.loginButton.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.primary_color_5))  // Change to your desired color
+            binding.loginButton.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.primary_color_5))
             binding.loginButton.isEnabled = true
             binding.loginButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
             binding.loginButton.iconTint = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.white))
@@ -155,20 +181,30 @@ class LoginFragment : Fragment() {
     }
 
     private fun loginUser(email: String, password: String) {
-
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     navigateToHome()
                 } else {
                     val exception = task.exception
-                    if (exception is FirebaseAuthInvalidUserException) {
-                        showError("User not found. Please sign up.")
-                    } else if (exception is FirebaseAuthInvalidCredentialsException) {
-                        showError("Invalid credentials. Please check your email and password.")
-                    } else {
-                        showError("An error occurred. Please try again.")
+                    when (exception) {
+                        is FirebaseAuthInvalidUserException -> showError("User not found. Please sign up.")
+                        is FirebaseAuthInvalidCredentialsException -> showError("Invalid credentials. Please check your email and password.")
+                        else -> showError("An error occurred. Please try again.")
                     }
+                }
+            }
+    }
+
+    private fun handleFacebookAccessToken(token: AccessToken) {
+        val credential = FacebookAuthProvider.getCredential(token.token)
+
+        auth.signInWithCredential(credential)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    navigateToHome()
+                } else {
+                    Toast.makeText(requireContext(), "Facebook sign-in failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                 }
             }
     }
@@ -185,17 +221,12 @@ class LoginFragment : Fragment() {
                 if (task.isSuccessful) {
                     navigateToHome()
                 } else {
-                    Toast.makeText(requireContext(), "Sign-in failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Google sign-in failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                 }
             }
     }
 
-
-
-
     private fun navigateToHome() {
-
-        // Navigate to the HomeFragment
         findNavController().navigate(R.id.action_loginFragment_to_homeFragment)
         val bottomNav = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
         bottomNav.selectedItemId = R.id.nav_home
@@ -203,6 +234,5 @@ class LoginFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-
     }
 }

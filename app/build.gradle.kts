@@ -107,5 +107,6 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core.v351)
 
     implementation (libs.androidx.work.runtime.ktx.v271)
+    implementation (libs.facebook.android.sdk)
 
 }

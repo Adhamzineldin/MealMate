@@ -19,5 +19,7 @@
     <string name="favorite">Favorites\n</string>
     <string name="favorites">Favorites</string>
     <string name="list">List</string>
+    <string name="facebook_app_id">950159900619630</string>
+    <string name="facebook_client_token">c9b12212c9269395944571d1231e4cac</string>
 
 </resources>
