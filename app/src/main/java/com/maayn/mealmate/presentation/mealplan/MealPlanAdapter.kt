@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -27,7 +28,9 @@ import com.maayn.mealmate.data.local.entities.ShoppingItem
 import com.maayn.mealmate.utils.MealPlanDiffCallback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -75,16 +78,34 @@ class MealPlanAdapter(
             }
 
             ivNotification.setOnClickListener {
-                // Create a work request
-                val workRequest = OneTimeWorkRequestBuilder<MealNotificationWorker>()
-                    .setInitialDelay(5, TimeUnit.SECONDS) // Adjust the delay as per your meal time
-                    .setInputData(workDataOf("mealName" to mealPlan.name))
-                    .build()
+                val mealDateString = mealPlan.date // Should be "21/03/2025 17:22"
+                val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
 
-                // Enqueue the work
-                WorkManager.getInstance(context).enqueue(workRequest)
+                try {
+                    val mealDate = dateFormat.parse(mealDateString) ?: return@setOnClickListener
+                    val currentTimeMillis = System.currentTimeMillis()
+                    val oneHourBeforeMeal = mealDate.time - TimeUnit.HOURS.toMillis(1)
 
-                Toast.makeText(context, "Reminder set for ${mealPlan.name}", Toast.LENGTH_SHORT).show()
+                    if (currentTimeMillis >= oneHourBeforeMeal) {
+                        Toast.makeText(context, "Meal time is too close or already passed", Toast.LENGTH_SHORT).show()
+                        return@setOnClickListener
+                    }
+
+                    val delayMillis = oneHourBeforeMeal - currentTimeMillis
+                    Log.e("MealPlanAdapter", "Delay: $delayMillis ms")
+
+                    val workRequest = OneTimeWorkRequestBuilder<MealNotificationWorker>()
+                        .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+                        .setInputData(workDataOf("mealName" to mealPlan.name))
+                        .build()
+
+                    WorkManager.getInstance(context).enqueue(workRequest)
+                    Toast.makeText(context, "Reminder set for ${mealPlan.name} one hour before meal time", Toast.LENGTH_SHORT).show()
+
+                } catch (e: Exception) {
+                    Log.e("MealPlanAdapter", "Error parsing date: ${e.message}")
+                    Toast.makeText(context, "Invalid meal date format", Toast.LENGTH_SHORT).show()
+                }
             }
 
 
