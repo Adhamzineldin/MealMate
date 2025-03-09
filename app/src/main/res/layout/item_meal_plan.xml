@@ -14,6 +14,33 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
+        <!-- Delete Icon -->
+        <ImageView
+            android:id="@+id/ivDelete"
+            android:layout_width="18dp"
+            android:layout_height="17dp"
+            android:clickable="true"
+            android:contentDescription="Delete Meal Plan"
+            android:focusable="true"
+            android:src="@drawable/ic_trash_bin"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/neutral_color_6" />
+
+        <!-- Notification Icon -->
+        <ImageView
+            android:id="@+id/ivNotification"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/notifications"
+            android:contentDescription="Notification"
+            app:tint="@color/neutral_color_6"
+            app:layout_constraintEnd_toStartOf="@id/ivDelete"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginEnd="12dp"
+            android:clickable="true"
+            android:focusable="true"/>
+
         <!-- Meal Plan Name -->
         <TextView
             android:id="@+id/tvMealPlanName"
@@ -24,6 +51,7 @@
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/ivNotification"
             tools:text="Weekly Healthy Meals" />
 
         <!-- Date and Meal Type -->

@@ -183,13 +183,13 @@ class HomeFragment : Fragment() {
             requireContext(),
             viewLifecycleOwner.lifecycleScope,
             onStartCookingClick = { mealPlan ->
-                val action = MealPlanFragmentDirections
-                    .actionMealPlanFragmentToRecipeDetailsFragment(mealPlan.recipeId)
+                val action = HomeFragmentDirections
+                    .actionHomeFragmentToRecipeDetailsFragment(mealPlan.recipeId)
                 findNavController().navigate(action)
             },
             onEditClick = { mealPlan ->
-                val action = MealPlanFragmentDirections
-                    .actionMealPlanFragmentToCreateMealPlanFragment(mealPlan)
+                val action = HomeFragmentDirections
+                    .actionHomeFragmentToCreateMealPlanFragment(mealPlan)
                 findNavController().navigate(action)
             }
         )

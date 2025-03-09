@@ -4,8 +4,6 @@ plugins {
     id("kotlin-kapt")
     id("com.google.gms.google-services")
     id("androidx.navigation.safeargs.kotlin")
-
-
 }
 
 android {
@@ -18,7 +16,6 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -31,20 +28,20 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
 
     buildFeatures {
-        viewBinding =  true
+        viewBinding = true
         dataBinding = true
     }
-
-
 }
 
 dependencies {
@@ -54,70 +51,58 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.material.v1110)
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
     // Navigation
-    implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
-    implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
+
 
     // Room Database
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    kapt(libs.androidx.room.compiler)
 
     // Firebase (using BOM for version alignment)
-    implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.android.gms:play-services-auth:21.0.0")
-    implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
-    implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.database)
 
-
+    // Google Play Services Auth
+    implementation(libs.play.services.auth)
 
     // Retrofit (TheMealDB API)
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
 
     // Lottie (Splash Animation)
-    implementation("com.airbnb.android:lottie:6.3.0")
+    implementation(libs.lottie)
 
     // ExoPlayer (Video Embedding)
-    implementation("com.google.android.exoplayer:exoplayer:2.19.1")
+    implementation(libs.exoplayer)
 
     // Hilt (Dependency Injection)
-    implementation("com.google.dagger:hilt-android:2.50")
-    kapt("com.google.dagger:hilt-compiler:2.50")
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
 
     // Coil (Image Loading)
-    implementation("io.coil-kt:coil:2.5.0")
+    implementation(libs.coil)
+
+    // Glide (Image Loading)
+    implementation(libs.glide)
+    kapt(libs.compiler)
+
+    // Gson
+    implementation(libs.gson)
+
+    // WorkManager
+    implementation(libs.androidx.work.runtime.ktx)
+
+    // Coroutines Play Services
+    implementation(libs.kotlinx.coroutines.play.services)
 
     // Testing
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-
-    implementation("androidx.navigation:navigation-fragment-ktx:2.6.0")
-    implementation("androidx.navigation:navigation-ui-ktx:2.6.0")
-
-    implementation("com.github.bumptech.glide:glide:4.15.1")
-    kapt("com.github.bumptech.glide:compiler:4.15.1")
-
-    implementation("com.google.android.material:material:1.7.0")
-
-    implementation("com.google.code.gson:gson:2.9.1")
-
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
-
-    implementation ("com.google.firebase:firebase-firestore")
-    implementation ("com.google.firebase:firebase-database")
-    implementation ("com.google.firebase:firebase-auth")
-
-    implementation ("androidx.work:work-runtime-ktx:2.8.1")
-
-
-
-
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit.v115)
+    androidTestImplementation(libs.androidx.espresso.core.v351)
 }

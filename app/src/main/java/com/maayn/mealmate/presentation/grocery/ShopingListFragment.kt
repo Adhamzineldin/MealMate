@@ -155,6 +155,7 @@ class ShoppingListFragment : Fragment(), ShoppingListAdapter.OnItemClickListener
     }
 
     private fun updateEmptyState() {
+
         with(binding) {
             val isEmpty = shoppingItems.isEmpty()
             rvShoppingList.visibility = if (isEmpty) View.GONE else View.VISIBLE
@@ -195,6 +196,5 @@ class ShoppingListFragment : Fragment(), ShoppingListAdapter.OnItemClickListener
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
     }
 }

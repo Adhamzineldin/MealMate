@@ -72,6 +72,12 @@
         <action
             android:id="@+id/action_homeFragment_to_shoppingListFragment"
             app:destination="@id/shoppingListFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_recipeDetailsFragment2"
+            app:destination="@id/recipeDetailsFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_createMealPlanFragment2"
+            app:destination="@id/createMealPlanFragment" />
     </fragment>
 
     <fragment

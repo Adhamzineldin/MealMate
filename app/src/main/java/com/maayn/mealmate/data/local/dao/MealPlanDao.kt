@@ -2,6 +2,7 @@ package com.maayn.mealmate.data.local.dao
 
 import androidx.lifecycle.LiveData
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -24,5 +25,8 @@ interface MealPlanDao {
 
     @Update
     suspend fun updateMealPlan(mealPlan: MealPlan)
+
+    @Delete
+    suspend fun deleteMealPlan(mealPlan: MealPlan)
 }
 

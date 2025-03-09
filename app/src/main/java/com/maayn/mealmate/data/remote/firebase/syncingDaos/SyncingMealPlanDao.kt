@@ -66,6 +66,20 @@ class SyncingMealPlanDao(
         }
     }
 
+    override suspend fun deleteMealPlan(mealPlan: MealPlan) {
+        mealPlanDao.deleteMealPlan(mealPlan) // Delete locally
+
+        mealPlan.firebaseId?.let { firebaseId ->
+            try {
+                firestore.collection("meal_plans").document(firebaseId).delete().await()
+                Log.i("SyncingMealPlanDao", "Successfully deleted meal plan from Firebase: $firebaseId")
+            } catch (e: Exception) {
+                Log.e("SyncingMealPlanDao", "Error deleting meal plan from Firebase", e)
+            }
+        }
+    }
+
+
     /**
      * Sync meal plans from Firebase to local Room database
      */

@@ -1,5 +1,6 @@
 package com.maayn.mealmate.presentation.grocery
 
+import android.app.AlertDialog
 import android.graphics.Paint
 import android.view.LayoutInflater
 import android.view.View
@@ -63,11 +64,19 @@ class ShoppingListAdapter(
 
         init {
             btnDeleteIngredient.setOnClickListener {
-                val position = adapterPosition
-                if (position != RecyclerView.NO_POSITION) {
-                    listener.onDeleteClick(position)
-                }
+                AlertDialog.Builder(it.context)
+                    .setTitle("Delete Ingredient")
+                    .setMessage("Are you sure you want to delete this ingredient?")
+                    .setPositiveButton("Delete") { _, _ ->
+                        val position = adapterPosition
+                        if (position != RecyclerView.NO_POSITION) {
+                            listener.onDeleteClick(position)
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
             }
+
 
             checkboxIngredient.setOnCheckedChangeListener { _, isChecked ->
                 val position = adapterPosition

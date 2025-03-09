@@ -1,5 +1,6 @@
 package com.maayn.mealmate.presentation.home.adapters
 
+import android.app.AlertDialog
 import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
@@ -17,6 +18,7 @@ import com.maayn.mealmate.data.local.entities.MealPlan
 import com.maayn.mealmate.presentation.home.model.toMealWithDetails
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class RecipesAdapter(
     private val context: Context,
@@ -84,24 +86,60 @@ class RecipesAdapter(
 
         private fun updateFavoriteInDatabase(updatedItem: RecipeItem) {
             val updatedItemAndClass = updatedItem.toMealWithDetails()
-            lifecycleScope.launch(Dispatchers.IO) {
-                try {
-                    val db = AppDatabase.getInstance(context)
-                    val favoriteDao = db.favoriteMealDao()
+            val context = context // Ensure you have a valid context
 
-                    val existingItem = favoriteDao.getFavoriteMealDetailsById(updatedItemAndClass.meal.id)
-                    if (existingItem != null) {
-                        favoriteDao.deleteFavoriteMeal(updatedItemAndClass.meal.id)
-                        Log.e("DB", "Removed favorite: ${updatedItem.name}")
-                    } else {
-                        favoriteDao.insertMealWithDetails(updatedItemAndClass)
-                        Log.e("DB", "Added to favorites: ${updatedItem.name}")
+            lifecycleScope.launch(Dispatchers.Main) {
+                val db = AppDatabase.getInstance(context)
+                val favoriteDao = db.favoriteMealDao()
+
+                val existingItem = withContext(Dispatchers.IO) {
+                    favoriteDao.getFavoriteMealDetailsById(updatedItemAndClass.meal.id)
+                }
+
+                if (existingItem != null) {
+                    // Show confirmation popup before deleting
+                    AlertDialog.Builder(context)
+                        .setTitle("Remove Favorite")
+                        .setMessage("Are you sure you want to remove ${updatedItem.name} from favorites?")
+                        .setPositiveButton("Remove") { _, _ ->
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                try {
+                                    favoriteDao.deleteFavoriteMeal(updatedItemAndClass.meal.id)
+                                    Log.e("DB", "Removed favorite: ${updatedItem.name}")
+
+                                    // Update UI on the main thread
+                                    withContext(Dispatchers.Main) {
+                                        updatedItem.isFavorited = false // Update the item state
+                                        notifyDataSetChanged() // Refresh adapter
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("DB_ERROR", "Failed to remove favorite: ${e.message}")
+                                }
+                            }
+                        }
+                        .setNegativeButton("Cancel", null)
+                        .show()
+                } else {
+                    // Directly add to favorites
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            favoriteDao.insertMealWithDetails(updatedItemAndClass)
+                            Log.e("DB", "Added to favorites: ${updatedItem.name}")
+
+                            // Update UI on the main thread
+                            withContext(Dispatchers.Main) {
+                                updatedItem.isFavorited = true // Update the item state
+                                notifyDataSetChanged() // Refresh adapter
+                            }
+                        } catch (e: Exception) {
+                            Log.e("DB_ERROR", "Failed to add favorite: ${e.message}")
+                        }
                     }
-                } catch (e: Exception) {
-                    Log.e("DB_ERROR", "Failed to update favorite: ${e.message}")
                 }
             }
         }
+
+
 
         private fun updateFavoriteIcon(isFavorited: Boolean) {
             binding.ivFavorite.setImageResource(
