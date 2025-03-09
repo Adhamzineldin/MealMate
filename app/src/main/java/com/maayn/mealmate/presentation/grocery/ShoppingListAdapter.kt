@@ -3,19 +3,15 @@ package com.maayn.mealmate.presentation.grocery
 import android.app.AlertDialog
 import android.graphics.Paint
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.CheckBox
-import android.widget.ImageButton
-import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.maayn.mealmate.R
 import com.maayn.mealmate.data.local.entities.ShoppingItem
+import com.maayn.mealmate.databinding.ItemShoppingListBinding
 
-class ShoppingListAdapter(
-    private var shoppingItems: MutableList<ShoppingItem>,
-    private val listener: OnItemClickListener
-) : RecyclerView.Adapter<ShoppingListAdapter.ShoppingItemViewHolder>() {
+class ShoppingListAdapter(private val listener: OnItemClickListener) :
+    ListAdapter<ShoppingItem, ShoppingListAdapter.ShoppingItemViewHolder>(ShoppingItemDiffCallback()) {
 
     interface OnItemClickListener {
         fun onDeleteClick(position: Int)
@@ -23,67 +19,53 @@ class ShoppingListAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ShoppingItemViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_shopping_list, parent, false)
-        return ShoppingItemViewHolder(view)
+        val binding = ItemShoppingListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ShoppingItemViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: ShoppingItemViewHolder, position: Int) {
-        val item = shoppingItems[position]
-        holder.tvIngredientName.text = item.name
-
-        // Prevent multiple listeners from stacking
-        holder.checkboxIngredient.setOnCheckedChangeListener(null)
-        holder.checkboxIngredient.isChecked = item.isChecked
-
-        // Apply or remove strikethrough
-        holder.tvIngredientName.paintFlags = if (item.isChecked) {
-            holder.tvIngredientName.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-        } else {
-            holder.tvIngredientName.paintFlags and (Paint.STRIKE_THRU_TEXT_FLAG.inv())
-        }
-
-        // Reattach the listener
-        holder.checkboxIngredient.setOnCheckedChangeListener { _, isChecked ->
-            listener.onCheckboxClick(position, isChecked)
-        }
+        holder.bind(getItem(position))
     }
 
-    override fun getItemCount(): Int = shoppingItems.size
+    inner class ShoppingItemViewHolder(private val binding: ItemShoppingListBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
-    fun updateList(newList: List<ShoppingItem>) {
-        shoppingItems.clear()
-        shoppingItems.addAll(newList)
-        notifyDataSetChanged()
-    }
+        fun bind(item: ShoppingItem) {
+            binding.tvIngredientName.text = item.name
+            binding.checkboxIngredient.isChecked = item.isChecked
 
-    inner class ShoppingItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val checkboxIngredient: CheckBox = itemView.findViewById(R.id.checkboxIngredient)
-        val tvIngredientName: TextView = itemView.findViewById(R.id.tvIngredientName)
-        val btnDeleteIngredient: ImageButton = itemView.findViewById(R.id.btnDeleteIngredient)
+            // Apply or remove strikethrough
+            binding.tvIngredientName.paintFlags = if (item.isChecked) {
+                binding.tvIngredientName.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            } else {
+                binding.tvIngredientName.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            }
 
-        init {
-            btnDeleteIngredient.setOnClickListener {
+            binding.checkboxIngredient.setOnCheckedChangeListener(null)
+            binding.checkboxIngredient.setOnCheckedChangeListener { _, isChecked ->
+                listener.onCheckboxClick(adapterPosition, isChecked)
+            }
+
+            binding.btnDeleteIngredient.setOnClickListener {
                 AlertDialog.Builder(it.context)
                     .setTitle("Delete Ingredient")
                     .setMessage("Are you sure you want to delete this ingredient?")
                     .setPositiveButton("Delete") { _, _ ->
-                        val position = adapterPosition
-                        if (position != RecyclerView.NO_POSITION) {
-                            listener.onDeleteClick(position)
-                        }
+                        listener.onDeleteClick(adapterPosition)
                     }
                     .setNegativeButton("Cancel", null)
                     .show()
             }
-
-
-            checkboxIngredient.setOnCheckedChangeListener { _, isChecked ->
-                val position = adapterPosition
-                if (position != RecyclerView.NO_POSITION) {
-                    listener.onCheckboxClick(position, isChecked)
-                }
-            }
         }
+    }
+}
+
+class ShoppingItemDiffCallback : DiffUtil.ItemCallback<ShoppingItem>() {
+    override fun areItemsTheSame(oldItem: ShoppingItem, newItem: ShoppingItem): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(oldItem: ShoppingItem, newItem: ShoppingItem): Boolean {
+        return oldItem == newItem
     }
 }

@@ -23,6 +23,9 @@ interface MealPlanDao {
     @Query("SELECT * FROM meal_plans WHERE id = :id")
     suspend fun getMealPlanById(id: Int?): MealPlan?
 
+    @Query("SELECT * FROM meal_plans WHERE firebaseId = :firebaseId")
+    suspend fun getMealPlanByFirebaseId(firebaseId: String?): List<MealPlan>?
+
     @Update
     suspend fun updateMealPlan(mealPlan: MealPlan)
 

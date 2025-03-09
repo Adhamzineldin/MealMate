@@ -12,10 +12,14 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.maayn.mealmate.R
+import com.maayn.mealmate.core.utils.MealNotificationWorker
 import com.maayn.mealmate.core.utils.NotificationReceiver
 import com.maayn.mealmate.data.local.database.AppDatabase
 import com.maayn.mealmate.data.local.entities.MealPlan
@@ -25,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class MealPlanAdapter(
     private val context: Context,
@@ -70,28 +75,18 @@ class MealPlanAdapter(
             }
 
             ivNotification.setOnClickListener {
-                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                val intent = Intent(context, NotificationReceiver::class.java).apply {
-                    putExtra("mealName", mealPlan.name)
-                }
+                // Create a work request
+                val workRequest = OneTimeWorkRequestBuilder<MealNotificationWorker>()
+                    .setInitialDelay(5, TimeUnit.SECONDS) // Adjust the delay as per your meal time
+                    .setInputData(workDataOf("mealName" to mealPlan.name))
+                    .build()
 
-                val pendingIntent = PendingIntent.getBroadcast(
-                    context, mealPlan.id ?: 0, intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-
-
-                // Set reminder time (Example: 1 hour before the meal time)
-                val calendar = Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, 10)  // Set reminder hour (adjust based on mealPlan)
-                    set(Calendar.MINUTE, 0)
-                }
-
-                // Schedule the alarm
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+                // Enqueue the work
+                WorkManager.getInstance(context).enqueue(workRequest)
 
                 Toast.makeText(context, "Reminder set for ${mealPlan.name}", Toast.LENGTH_SHORT).show()
             }
+
 
             ivDelete.setOnClickListener {
                 MaterialAlertDialogBuilder(context)
@@ -112,14 +107,23 @@ class MealPlanAdapter(
                 coroutineScope.launch {
                     val db = AppDatabase.getInstance(context)
                     val meal = db.mealDao().getMealWithDetails(mealPlan.recipeId)
-                    meal.ingredients.forEach { ingredient ->
-                        val shoppingItem = ShoppingItem(UUID.randomUUID().toString(), ingredient.name)
-                        db.shoppingItemDao().insert(shoppingItem)
+
+                    if (meal != null && meal.ingredients.isNotEmpty()) {
+                        meal.ingredients.forEach { ingredient ->
+                            val shoppingItem = ShoppingItem(
+                                id = UUID.randomUUID().toString(),
+                                name = ingredient.name // Assuming ingredient has a 'name' property
+                            )
+                            db.shoppingItemDao().insert(shoppingItem)
+                        }
+                        Toast.makeText(context, "Ingredients added to shopping list", Toast.LENGTH_SHORT).show()
+                    } else {
+                        // Handle the case where meal or ingredients are null or empty
+                        Toast.makeText(context, "No ingredients available to add", Toast.LENGTH_SHORT).show()
                     }
                 }
-                Toast.makeText(context, "Ingredients added to shopping list", Toast.LENGTH_SHORT).show()
-
             }
+
 
         }
 

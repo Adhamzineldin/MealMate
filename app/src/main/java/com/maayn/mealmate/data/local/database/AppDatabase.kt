@@ -8,7 +8,6 @@ import androidx.room.TypeConverters
 import com.google.firebase.firestore.FirebaseFirestore
 import com.maayn.mealmate.data.local.dao.*
 import com.maayn.mealmate.data.local.entities.*
-import com.maayn.mealmate.data.remote.firebase.*
 import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingFavoriteMealDao
 import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingIngredientDao
 import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingMealDao
@@ -20,7 +19,7 @@ import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingShoppingListDa
 @Database(
     entities = [Meal::class, FavoriteMeal::class, MealPlan::class, Ingredient::class, ShoppingList::class,
         MealOfTheDay::class, InstructionEntity::class, IngredientEntity::class, ShoppingItem::class],
-    version = 14
+    version = 15
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {

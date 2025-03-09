@@ -1,5 +1,6 @@
 package com.maayn.mealmate.data.remote.firebase.syncingDaos
 
+import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.maayn.mealmate.data.local.dao.MealOfTheDayDao
 import com.maayn.mealmate.data.local.entities.MealOfTheDay
@@ -16,7 +17,7 @@ class SyncingMealOfTheDayDao(
 
     override suspend fun setMealOfTheDay(meal: MealOfTheDay) {
         mealOfTheDayDao.setMealOfTheDay(meal) // Save locally
-
+        Log.d("SyncingMealOfTheDayDao", "Inserting meal: $meal")
         // Sync to Firebase in the background
         CoroutineScope(Dispatchers.IO).launch {
             firestore.collection("meal_of_the_day").document(meal.date).set(meal)
@@ -24,6 +25,7 @@ class SyncingMealOfTheDayDao(
     }
 
     override suspend fun insertMealsOfTheDay(meals: List<MealOfTheDay>) {
+        Log.d("SyncingMealOfTheDayDao", "Inserting meals: $meals")
         mealOfTheDayDao.insertMealsOfTheDay(meals) // Save locally
 
         // Sync all meals to Firebase
@@ -54,18 +56,31 @@ class SyncingMealOfTheDayDao(
     // 🔥 Sync data from Firestore to Room Database
     suspend fun syncFromFirebase() {
         try {
+            // Fetch meals from Firestore
             val snapshot = firestore.collection("meal_of_the_day").get().await()
+
+            // Log the snapshot data for debugging purposes
+            if (snapshot.isEmpty) {
+                println("Firestore collection is empty!")
+            }
+
+            // Convert the snapshot to a list of MealOfTheDay objects
             val mealsOfTheDay: List<MealOfTheDay> = snapshot.documents.mapNotNull { doc ->
                 doc.toObject(MealOfTheDay::class.java)
             }
 
-            // Insert only if new data exists
             if (mealsOfTheDay.isNotEmpty()) {
+                println("Found ${mealsOfTheDay.size} meals in Firestore.")
+                Log.d("SyncingMealOfTheDayDao", "Found ${mealsOfTheDay.size} meals in Firestore.")
                 mealOfTheDayDao.insertMealsOfTheDay(mealsOfTheDay) // Insert new data
+            } else {
+                println("No meals found in Firestore.")
             }
         } catch (e: Exception) {
+            println("Error syncing from Firestore: ${e.message}")
             e.printStackTrace()
         }
     }
+
 }
 

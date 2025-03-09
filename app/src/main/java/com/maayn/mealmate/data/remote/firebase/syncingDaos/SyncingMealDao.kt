@@ -1,5 +1,6 @@
 package com.maayn.mealmate.data.remote.firebase.syncingDaos
 
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.maayn.mealmate.data.local.dao.MealDao
 import com.maayn.mealmate.data.local.entities.*
@@ -8,11 +9,16 @@ import kotlinx.coroutines.tasks.await
 
 class SyncingMealDao(
     private val mealDao: MealDao,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val userId: String? = FirebaseAuth.getInstance().currentUser?.uid // Default to current user if null
+
 ) : MealDao {
 
+    private fun userMealsCollection() =
+        firestore.collection("users").document(userId.toString()).collection("meals")
+
     init {
-        listenToMealUpdates() // 🔥 Start real-time sync on init
+        listenToMealUpdates() // ✅ Start real-time sync
     }
 
     // 🔹 **INSERT METHODS**
@@ -28,21 +34,23 @@ class SyncingMealDao(
 
     override suspend fun insertMeal(meal: Meal) {
         mealDao.insertMeal(meal)
-        CoroutineScope(Dispatchers.IO).launch { firestore.collection("meals").document(meal.id).set(meal) }
+        CoroutineScope(Dispatchers.IO).launch {
+            userMealsCollection().document(meal.id).set(meal) // ✅ Store under user
+        }
     }
 
     override suspend fun insertMeals(meals: List<Meal>) {
         CoroutineScope(Dispatchers.IO).launch {
+            val batch = firestore.batch()
             meals.forEach { meal ->
-                if (meal.id.isNotEmpty()) { // ✅ Ensure ID exists
-                    firestore.collection("meals").document(meal.id).set(meal)
-                } else {
-                    println("Skipping meal: Missing ID")
+                if (meal.id.isNotEmpty()) {
+                    val docRef = userMealsCollection().document(meal.id)
+                    batch.set(docRef, meal)
                 }
             }
+            batch.commit()
         }
     }
-
 
     override suspend fun insertIngredients(ingredients: List<IngredientEntity>) {
         mealDao.insertIngredients(ingredients)
@@ -84,7 +92,7 @@ class SyncingMealDao(
     // 🔹 **DELETE METHODS**
     override suspend fun deleteMeal(mealId: String) {
         mealDao.deleteMeal(mealId)
-        CoroutineScope(Dispatchers.IO).launch { firestore.collection("meals").document(mealId).delete() }
+        CoroutineScope(Dispatchers.IO).launch { userMealsCollection().document(mealId).delete() }
     }
 
     override suspend fun deleteMealIngredients(mealId: String) {
@@ -98,11 +106,11 @@ class SyncingMealDao(
     // 🔹 **SYNC FROM FIREBASE TO ROOM**
     suspend fun syncFromFirebase() {
         try {
-            val snapshot = firestore.collection("meals").get().await()
+            val snapshot = userMealsCollection().get().await()
             val meals = snapshot.documents.mapNotNull { it.toObject(Meal::class.java) }
 
             if (meals.isNotEmpty()) {
-                mealDao.insertMeals(meals) // Save meals to Room
+                mealDao.insertMeals(meals) // ✅ Save meals to Room
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -111,15 +119,14 @@ class SyncingMealDao(
 
     // 🔹 **Real-time Sync (Listen for Firestore Changes)**
     private fun listenToMealUpdates() {
-        firestore.collection("meals")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) return@addSnapshotListener
+        userMealsCollection().addSnapshotListener { snapshot, error ->
+            if (error != null || snapshot == null) return@addSnapshotListener
 
-                CoroutineScope(Dispatchers.IO).launch {
-                    val meals = snapshot.documents.mapNotNull { it.toObject(Meal::class.java) }
-                    mealDao.insertMeals(meals) // Save updates to Room
-                }
+            CoroutineScope(Dispatchers.IO).launch {
+                val meals = snapshot.documents.mapNotNull { it.toObject(Meal::class.java) }
+                mealDao.insertMeals(meals) // ✅ Sync updates locally
             }
+        }
     }
 
     // 🔹 **SYNC TO FIREBASE**
@@ -127,13 +134,13 @@ class SyncingMealDao(
         val batch = firestore.batch()
         meals.forEach { meal ->
             val mealId = meal.meal.id.takeIf { it.isNotEmpty() } ?: return@forEach
-            val docRef = firestore.collection("meals").document(mealId)
+            val docRef = userMealsCollection().document(mealId)
             batch.set(docRef, meal)
         }
         batch.commit()
     }
 
     private suspend fun syncMealToFirebase(meal: MealWithDetails) {
-        firestore.collection("meals").document(meal.meal.id).set(meal).await()
+        userMealsCollection().document(meal.meal.id).set(meal).await()
     }
 }

@@ -1,9 +1,17 @@
 package com.maayn.mealmate
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
@@ -24,6 +32,7 @@ import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingShoppingListDa
 import com.maayn.mealmate.databinding.ActivityMainBinding
 import com.maayn.mealmate.presentation.splash.LoadingFragment
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -33,14 +42,39 @@ class MainActivity : AppCompatActivity() {
     private val firebaseAuth by lazy { FirebaseAuth.getInstance() }
     private val firestore by lazy { FirebaseFirestore.getInstance() }
 
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                // Permission granted, you can now post notifications
+                Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                // Permission denied, show an appropriate message
+                Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Request permission for notifications if on Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                // Request the permission
+                requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
         setupFirestore()
         setupNavigation()
-        syncDataFromFirestore() // 🔥 Ensures Firestore syncs at startup
+        observeLoginState()
     }
 
     // 🔹 Setup Firestore with offline persistence
@@ -75,6 +109,16 @@ class MainActivity : AppCompatActivity() {
         handleBottomNavVisibility()
     }
 
+    private fun observeLoginState() {
+        val authListener = FirebaseAuth.AuthStateListener { auth ->
+            val user = auth.currentUser
+            if (user != null) {
+                syncDataFromFirestore()
+            }
+        }
+
+        firebaseAuth.addAuthStateListener(authListener)
+    }
 
 
     // 🔹 Sync data from Firestore to local Room database
@@ -102,10 +146,10 @@ class MainActivity : AppCompatActivity() {
 
             // Sync all DAOs from Firestore to Room
             syncingMealDao.syncFromFirebase()
+            syncingIngredientDao.syncFromFirebase()
             syncingFavoriteMealDao.syncFromFirebase()
             syncingMealPlanDao.syncMealPlansFromFirebase()
             syncingShoppingItemDao.syncFromFirebase()
-            syncingIngredientDao.syncFromFirebase()
             syncingMealOfTheDayDao.syncFromFirebase()
 
             // Dismiss loading screen after sync completes

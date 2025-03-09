@@ -1,13 +1,17 @@
 package com.maayn.mealmate.data.local.entities
 
-import java.io.Serializable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.Index
+import java.io.Serializable
 
-@Entity(tableName = "meal_plans")
+@Entity(
+    tableName = "meal_plans",
+    indices = [Index(value = ["firebaseId"], unique = true)]  // Ensure uniqueness
+)
 data class MealPlan(
-    @PrimaryKey(autoGenerate = true) var id: Int? = null,  // Room's auto-generated ID
-    var firebaseId: String? = null,  // Firestore document ID (null until Firestore assigns it)
+    @PrimaryKey(autoGenerate = true) var id: Int? = null,
+    var firebaseId: String? = null,  // Firestore document ID (must be unique)
     var name: String = "",
     var date: String? = "",
     var mealType: String = "",
@@ -17,4 +21,3 @@ data class MealPlan(
 ) : Serializable {
     constructor() : this(null, null, "", "", "", "", "", "")
 }
-

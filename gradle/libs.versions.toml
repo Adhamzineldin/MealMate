@@ -37,6 +37,7 @@ playServicesAuth = "21.0.0"
 retrofit = "2.9.0"
 roomRuntime = "2.6.1"
 workRuntimeKtx = "2.8.1"
+workRuntimeKtxVersion = "2.7.1"
 
 [libraries]
 androidx-espresso-core-v351 = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCoreVersion" }
@@ -46,6 +47,7 @@ androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref =
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomRuntime" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
+androidx-work-runtime-ktx-v271 = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtxVersion" }
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
 compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "compiler" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }

@@ -1,8 +1,8 @@
 package com.maayn.mealmate.data.remote.firebase.syncingDaos
 
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.maayn.mealmate.data.local.dao.FavoriteMealDao
-import com.maayn.mealmate.data.local.database.AppDatabase
 import com.maayn.mealmate.data.local.entities.FavoriteMeal
 import com.maayn.mealmate.data.local.entities.IngredientEntity
 import com.maayn.mealmate.data.local.entities.InstructionEntity
@@ -15,125 +15,119 @@ import kotlinx.coroutines.tasks.await
 
 class SyncingFavoriteMealDao(
     private val favoriteMealDao: FavoriteMealDao,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val userId: String? = FirebaseAuth.getInstance().currentUser?.uid
+
 ) : FavoriteMealDao {
+
+    private fun userMealsCollection() =
+        firestore.collection("users").document(userId.toString()).collection("favorite_meals")
 
     override suspend fun insertMeal(meal: Meal) {
         favoriteMealDao.insertMeal(meal) // Save locally
 
-        // Sync to Firebase
         CoroutineScope(Dispatchers.IO).launch {
-            firestore.collection("meals").document().set(meal)
+            userMealsCollection().document(meal.id).set(meal) // ✅ Store under user
         }
     }
 
-
     override suspend fun insertIngredients(ingredients: List<IngredientEntity>) {
-        favoriteMealDao.insertIngredients(ingredients) // Save locally
+        favoriteMealDao.insertIngredients(ingredients)
     }
 
     override suspend fun insertInstructions(instructions: List<InstructionEntity>) {
-        favoriteMealDao.insertInstructions(instructions) // Save locally
+        favoriteMealDao.insertInstructions(instructions)
     }
 
     override suspend fun insertFavoriteMeal(favoriteMeal: FavoriteMeal) {
         favoriteMealDao.insertFavoriteMeal(favoriteMeal) // Save locally
 
-        // Sync to Firebase
-        CoroutineScope(Dispatchers.IO).launch {
-            firestore.collection("favorite_meals").document(favoriteMeal.id).set(favoriteMeal)
+        try {
+            // Correctly store the favorite meal as a document inside the 'favorite_meals' collection
+            userMealsCollection().document(favoriteMeal.id).set(favoriteMeal).await()
+        } catch (e: Exception) {
+            // Handle any errors during the Firestore operation
+            e.printStackTrace()
         }
     }
 
     override suspend fun updateMeal(meal: Meal) {
-        favoriteMealDao.updateMeal(meal) // Update locally
+        favoriteMealDao.updateMeal(meal)
 
-        // Sync update to Firebase
         CoroutineScope(Dispatchers.IO).launch {
-            firestore.collection("meals").document(meal.id).set(meal)
+            userMealsCollection().document(meal.id).set(meal) // ✅ Update under user
         }
     }
 
     override suspend fun updateIngredients(ingredients: List<IngredientEntity>) {
-        favoriteMealDao.updateIngredients(ingredients) // Update locally
+        favoriteMealDao.updateIngredients(ingredients)
     }
 
     override suspend fun updateInstructions(instructions: List<InstructionEntity>) {
-        favoriteMealDao.updateInstructions(instructions) // Update locally
+        favoriteMealDao.updateInstructions(instructions)
     }
 
     override suspend fun updateFavoriteMeal(favoriteMeal: FavoriteMeal) {
-        favoriteMealDao.updateFavoriteMeal(favoriteMeal) // Update locally
+        favoriteMealDao.updateFavoriteMeal(favoriteMeal)
 
-        // Sync update to Firebase
         CoroutineScope(Dispatchers.IO).launch {
-            firestore.collection("favorite_meals").document(favoriteMeal.id).set(favoriteMeal)
+            userMealsCollection().document(favoriteMeal.id).set(favoriteMeal) // ✅ Update under user
         }
     }
 
     override suspend fun insertMealWithDetails(mealWithDetails: MealWithDetails) {
-        favoriteMealDao.insertMealWithDetails(mealWithDetails) // Save locally
+        favoriteMealDao.insertMealWithDetails(mealWithDetails)
 
-        // Sync to Firebase
         CoroutineScope(Dispatchers.IO).launch {
-            firestore.collection("meals").document(mealWithDetails.meal.id).set(mealWithDetails)
-            firestore.collection("favorite_meals").document(mealWithDetails.meal.id).set(
-                FavoriteMeal(id = mealWithDetails.meal.id)
-            )
+            userMealsCollection().document(mealWithDetails.meal.id).set(mealWithDetails)
         }
     }
 
     override suspend fun updateMealWithDetails(mealWithDetails: MealWithDetails) {
-        favoriteMealDao.updateMealWithDetails(mealWithDetails) // Update locally
+        favoriteMealDao.updateMealWithDetails(mealWithDetails)
 
-        // Sync update to Firebase
         CoroutineScope(Dispatchers.IO).launch {
-            firestore.collection("meals").document(mealWithDetails.meal.id).set(mealWithDetails)
-            firestore.collection("favorite_meals").document(mealWithDetails.meal.id).set(
-                FavoriteMeal(id = mealWithDetails.meal.id)
-            )
+            userMealsCollection().document(mealWithDetails.meal.id).set(mealWithDetails)
         }
     }
 
     override suspend fun getAllFavoriteMealDetails(): List<MealWithDetails> {
-        return favoriteMealDao.getAllFavoriteMealDetails() // Local fetch
+        return favoriteMealDao.getAllFavoriteMealDetails()
     }
 
     override suspend fun getFavoriteMealDetailsById(mealId: String): MealWithDetails? {
-        return favoriteMealDao.getFavoriteMealDetailsById(mealId) // Local fetch
+        return favoriteMealDao.getFavoriteMealDetailsById(mealId)
     }
 
     override suspend fun deleteFavoriteMeal(mealId: String) {
-        favoriteMealDao.deleteFavoriteMeal(mealId) // Delete locally
+        favoriteMealDao.deleteFavoriteMeal(mealId)
 
-        // Remove from Firebase
         CoroutineScope(Dispatchers.IO).launch {
-            firestore.collection("favorite_meals").document(mealId).delete()
+            userMealsCollection().document(mealId).delete() // ✅ Delete only for the user
         }
     }
 
     override suspend fun updateMealAsNotFavorite(mealId: String) {
-        favoriteMealDao.updateMealAsNotFavorite(mealId) // Update locally
+        favoriteMealDao.updateMealAsNotFavorite(mealId)
     }
 
     override suspend fun removeFromFavorites(mealId: String) {
-        favoriteMealDao.removeFromFavorites(mealId) // Update locally
+        favoriteMealDao.removeFromFavorites(mealId)
 
-        // Remove from Firebase
         CoroutineScope(Dispatchers.IO).launch {
-            firestore.collection("favorite_meals").document(mealId).delete()
+            userMealsCollection().document(mealId).delete()
         }
     }
 
     suspend fun syncFromFirebase() {
         try {
-            // Fetch favorite meals from Firestore
-            val favoriteMealSnapshot = firestore.collection("favorite_meals").get().await()
+            // ✅ Fetch only the authenticated user's favorite meals
+            val favoriteMealSnapshot = userMealsCollection().get().await()
             val favoriteMeals: List<FavoriteMeal> = favoriteMealSnapshot.documents.mapNotNull { doc ->
                 doc.toObject(FavoriteMeal::class.java)
             }
 
-            // ✅ Insert favorite meals into local database (only this, no meals or ingredients)
+            // ✅ Insert favorite meals into local database
             favoriteMeals.forEach { favoriteMeal ->
                 favoriteMealDao.insertFavoriteMeal(favoriteMeal)
             }
@@ -142,11 +136,4 @@ class SyncingFavoriteMealDao(
             e.printStackTrace()
         }
     }
-
-
-
-
-
-
-
 }
