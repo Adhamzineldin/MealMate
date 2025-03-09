@@ -6,6 +6,7 @@ import com.maayn.mealmate.data.local.entities.Ingredient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class SyncingIngredientDao(
     private val ingredientDao: IngredientDao,
@@ -37,5 +38,21 @@ class SyncingIngredientDao(
 
     override suspend fun getAllIngredients(): List<Ingredient> {
         return ingredientDao.getAllIngredients() // Fetch locally
+    }
+
+    suspend fun syncFromFirebase() {
+        try {
+            val snapshot = firestore.collection("ingredients").get().await()
+            val ingredients: List<Ingredient> = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Ingredient::class.java)
+            }
+
+            // Insert only if new data exists
+            if (ingredients.isNotEmpty()) {
+                ingredientDao.insertIngredients(ingredients) // Insert new data
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

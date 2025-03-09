@@ -62,4 +62,23 @@ class SyncingShoppingItemDao(
             firestore.collection("shopping_items").document(item.id).set(item)
         }
     }
+
+
+    suspend fun syncFromFirebase() {
+        try {
+            val snapshot = firestore.collection("shopping_items").get().await()
+            val items: List<ShoppingItem> = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(ShoppingItem::class.java)
+            }
+
+            // Insert only if new data exists
+            if (items.isNotEmpty()) {
+                items.forEach {
+                    shoppingItemDao.insert(it)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

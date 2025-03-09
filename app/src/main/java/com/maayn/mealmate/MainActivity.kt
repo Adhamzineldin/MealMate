@@ -86,7 +86,6 @@ class MainActivity : AppCompatActivity() {
             val favoriteMealDao = db.favoriteMealDao()
             val mealPlanDao = db.mealPlanDao()
             val ingredientDao = db.ingredientDao()
-            val shoppingListDao = db.shoppingListDao()
             val mealOfTheDayDao = db.mealOfTheDayDao()
             val shoppingItemDao = db.shoppingItemDao()
 
@@ -94,7 +93,6 @@ class MainActivity : AppCompatActivity() {
             val syncingFavoriteMealDao = SyncingFavoriteMealDao(favoriteMealDao, firestore)
             val syncingMealPlanDao = SyncingMealPlanDao(mealPlanDao, firestore)
             val syncingIngredientDao = SyncingIngredientDao(ingredientDao, firestore)
-            val syncingShoppingListDao = SyncingShoppingListDao(shoppingListDao, firestore)
             val syncingMealOfTheDayDao = SyncingMealOfTheDayDao(mealOfTheDayDao, firestore)
             val syncingShoppingItemDao = SyncingShoppingItemDao(shoppingItemDao, firestore)
 
@@ -102,10 +100,10 @@ class MainActivity : AppCompatActivity() {
             syncingMealDao.syncFromFirebase()
             syncingFavoriteMealDao.syncFromFirebase()
             syncingMealPlanDao.syncMealPlansFromFirebase()
-//            syncingIngredientDao.syncFromFirebase()
-//            syncingShoppingListDao.syncFromFirebase()
-//            syncingMealOfTheDayDao.syncFromFirebase()
-//            syncingShoppingItemDao.syncFromFirebase()
+            syncingShoppingItemDao.syncFromFirebase()
+            syncingIngredientDao.syncFromFirebase()
+            syncingMealOfTheDayDao.syncFromFirebase()
+
         }
     }
 

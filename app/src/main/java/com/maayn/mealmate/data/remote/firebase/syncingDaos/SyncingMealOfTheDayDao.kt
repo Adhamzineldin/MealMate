@@ -50,4 +50,22 @@ class SyncingMealOfTheDayDao(
         // Return the locally stored meal
         return mealOfTheDayDao.getMealOfTheDayDetails(today)
     }
+
+    // 🔥 Sync data from Firestore to Room Database
+    suspend fun syncFromFirebase() {
+        try {
+            val snapshot = firestore.collection("meal_of_the_day").get().await()
+            val mealsOfTheDay: List<MealOfTheDay> = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(MealOfTheDay::class.java)
+            }
+
+            // Insert only if new data exists
+            if (mealsOfTheDay.isNotEmpty()) {
+                mealOfTheDayDao.insertMealsOfTheDay(mealsOfTheDay) // Insert new data
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
+
