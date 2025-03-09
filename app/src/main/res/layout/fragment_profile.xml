@@ -159,10 +159,10 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnLogout"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="590dp"
-        android:layout_marginBottom="86dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="32dp"
         android:drawableLeft="@drawable/ic_logout"
         android:drawablePadding="8dp"
         android:padding="12dp"
@@ -170,8 +170,9 @@
         android:textColor="@color/coral_text"
         app:cornerRadius="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:strokeColor="@color/coral_text"
-        tools:layout_editor_absoluteX="16dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:strokeColor="@color/coral_text"/>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

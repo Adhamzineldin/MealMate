@@ -4,7 +4,9 @@ import androidx.room.Entity
 
 @Entity(tableName = "meal_instructions", primaryKeys = ["mealId", "step"])
 data class InstructionEntity(
-    val mealId: String,  // Foreign key to Meal
-    val step: String,
-    val description: String
-)
+    var mealId: String = "",  // Foreign key to Meal
+    var step: String = "",
+    var description: String = ""
+) {
+    constructor() : this("", "", "") // No-argument constructor for Firestore
+}

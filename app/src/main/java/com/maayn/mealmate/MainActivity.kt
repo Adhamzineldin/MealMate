@@ -1,174 +1,146 @@
 package com.maayn.mealmate
 
-
 import android.os.Bundle
-import android.os.StrictMode
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.marginBottom
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
-import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
+import androidx.work.*
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
-import com.maayn.mealmate.data.remote.firebase.SyncWorker
+import com.maayn.mealmate.data.local.database.AppDatabase
+import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingFavoriteMealDao
+import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingIngredientDao
+import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingMealDao
+import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingMealOfTheDayDao
+import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingMealPlanDao
+import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingShoppingItemDao
+import com.maayn.mealmate.data.remote.firebase.syncingDaos.SyncingShoppingListDao
 import com.maayn.mealmate.databinding.ActivityMainBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
-
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    private var lastClickTime: Long = 0
-    private val debounceTime = 500L
+    private lateinit var navController: NavController
+    private val firebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val firestore by lazy { FirebaseFirestore.getInstance() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        scheduleSyncWorker()
-        // Make status bar icons dark (for better visibility on white background)
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 
+        setupFirestore()
+        setupNavigation()
+        syncDataFromFirestore() // 🔥 Ensures Firestore syncs at startup
+    }
 
-        // Reference the NavHostFragment and NavController
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        val navController = navHostFragment.navController
-
-        // Set up BottomNavigationView with NavController
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        bottomNav.setupWithNavController(navController)
-
-
-        val firestore = FirebaseFirestore.getInstance()
+    // 🔹 Setup Firestore with offline persistence
+    private fun setupFirestore() {
         val settings = FirebaseFirestoreSettings.Builder()
             .setPersistenceEnabled(true)
             .build()
         firestore.firestoreSettings = settings
+    }
 
-        val firebaseAuth = FirebaseAuth.getInstance()
+    // 🔹 Setup Navigation and Bottom Navigation
+    private fun setupNavigation() {
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navController = navHostFragment.navController
 
-        // Handle navigation item selection
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        bottomNav.setupWithNavController(navController)
+
         bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> {
-                    navController.navigateSafely(R.id.homeFragment)
-                    true
-                }
-                R.id.nav_meal_plan -> {
-                    if (firebaseAuth.currentUser != null) {
-                        navController.navigateSafely(R.id.mealPlanFragment)
-                    } else {
-                        navController.navigateSafely(R.id.loginFragment)
-                    }
-                    true
-                }
-                R.id.nav_favorites -> {
-                    if (firebaseAuth.currentUser != null) {
-                        navController.navigateSafely(R.id.favoritesFragment)
-                    } else {
-                        navController.navigateSafely(R.id.loginFragment)
-                    }
-                    true
-                }
-                R.id.nav_recipes -> {
-                    navController.navigate(R.id.recipesFragment)
-                    true
-                }
-                R.id.nav_profile -> {
-                    if (firebaseAuth.currentUser != null) {
-                        navController.navigateSafely(R.id.profileFragment)
-                    } else {
-                        navController.navigateSafely(R.id.loginFragment)
-                    }
-                    true
-                }
-                else -> false
+            val destination = when (item.itemId) {
+                R.id.nav_home -> R.id.homeFragment
+                R.id.nav_meal_plan -> if (firebaseAuth.currentUser != null) R.id.mealPlanFragment else R.id.loginFragment
+                R.id.nav_favorites -> if (firebaseAuth.currentUser != null) R.id.favoritesFragment else R.id.loginFragment
+                R.id.nav_recipes -> R.id.recipesFragment
+                R.id.nav_profile -> if (firebaseAuth.currentUser != null) R.id.profileFragment else R.id.loginFragment
+                else -> null
             }
+            destination?.let { navController.navigateSafely(it) }
+            destination != null
+        }
+
+        handleBottomNavVisibility()
+    }
+
+
+
+    // 🔹 Sync data from Firestore to local Room database
+    private fun syncDataFromFirestore() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val db = AppDatabase.getInstance(this@MainActivity)
+            val firestore = FirebaseFirestore.getInstance()
+
+            val mealDao = db.mealDao()
+            val favoriteMealDao = db.favoriteMealDao()
+            val mealPlanDao = db.mealPlanDao()
+            val ingredientDao = db.ingredientDao()
+            val shoppingListDao = db.shoppingListDao()
+            val mealOfTheDayDao = db.mealOfTheDayDao()
+            val shoppingItemDao = db.shoppingItemDao()
+
+            val syncingMealDao = SyncingMealDao(mealDao, firestore)
+            val syncingFavoriteMealDao = SyncingFavoriteMealDao(favoriteMealDao, firestore)
+            val syncingMealPlanDao = SyncingMealPlanDao(mealPlanDao, firestore)
+            val syncingIngredientDao = SyncingIngredientDao(ingredientDao, firestore)
+            val syncingShoppingListDao = SyncingShoppingListDao(shoppingListDao, firestore)
+            val syncingMealOfTheDayDao = SyncingMealOfTheDayDao(mealOfTheDayDao, firestore)
+            val syncingShoppingItemDao = SyncingShoppingItemDao(shoppingItemDao, firestore)
+
+            // Sync all DAOs from Firestore to Room
+            syncingMealDao.syncFromFirebase()
+            syncingFavoriteMealDao.syncFromFirebase()
+            syncingMealPlanDao.syncMealPlansFromFirebase()
+//            syncingIngredientDao.syncFromFirebase()
+//            syncingShoppingListDao.syncFromFirebase()
+//            syncingMealOfTheDayDao.syncFromFirebase()
+//            syncingShoppingItemDao.syncFromFirebase()
         }
     }
 
 
-    private fun scheduleSyncWorker() {
-        val workRequest = PeriodicWorkRequestBuilder<SyncWorker>(6, TimeUnit.HOURS)
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED) // Requires internet
-                    .build()
-            )
-            .build()
-
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "SyncWorker",
-            ExistingPeriodicWorkPolicy.KEEP,
-            workRequest
-        )
-    }
-
-    override fun onStart() {
-        super.onStart()
-
-        // Reference the NavController for handling bottom navigation visibility
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        val navController = navHostFragment.navController
-
-        // Add DestinationChangedListener to show/hide bottom navigation
+    // 🔹 Manage Bottom Navigation visibility based on destination
+    private fun handleBottomNavVisibility() {
         navController.addOnDestinationChangedListener { _, destination, _ ->
-            when (destination.id) {
-                R.id.loginFragment, R.id.signupFragment -> {
-                    // Remove bottom margin when on login or signup fragment
-                    val layoutParams = binding.navHostFragment.layoutParams as ViewGroup.MarginLayoutParams
-                    layoutParams.bottomMargin = 0
-                    binding.navHostFragment.layoutParams = layoutParams
-                    binding.bottomNavigationFragment.visibility = View.GONE
-                }
-                else -> {
-                    // Set bottom margin to some value (e.g., 60dp)
-                    val bottomMarginInDp = 85
-                    val bottomMarginInPx = (bottomMarginInDp * resources.displayMetrics.density).toInt()
-
-                    val layoutParams = binding.navHostFragment.layoutParams as ViewGroup.MarginLayoutParams
-                    layoutParams.bottomMargin = bottomMarginInPx
-                    binding.navHostFragment.layoutParams = layoutParams
-                    binding.bottomNavigationFragment.visibility = View.VISIBLE
-                }
+            val layoutParams = binding.navHostFragment.layoutParams as ViewGroup.MarginLayoutParams
+            if (destination.id in listOf(R.id.loginFragment, R.id.signupFragment)) {
+                layoutParams.bottomMargin = 0
+                binding.bottomNavigationFragment.visibility = View.GONE
+            } else {
+                layoutParams.bottomMargin = (85 * resources.displayMetrics.density).toInt()
+                binding.bottomNavigationFragment.visibility = View.VISIBLE
             }
+            binding.navHostFragment.layoutParams = layoutParams
         }
-
     }
 
+    // 🔹 Handle Back Press
     override fun onBackPressed() {
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        val navController = navHostFragment.navController
         if (navController.currentDestination?.id == R.id.homeFragment) {
-            // Exit app instead of going back to login
             finish()
         } else {
             super.onBackPressed()
         }
     }
 
+    // 🔹 Handle Navigation Up
     override fun onSupportNavigateUp(): Boolean {
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        val navController = navHostFragment.navController
         return navController.navigateUp() || super.onSupportNavigateUp()
     }
 
-    
-    fun NavController.navigateSafely(destinationId: Int) {
-        // Prevent navigation to the same destination
-        if (currentDestination?.id != destinationId) {
-            navigate(destinationId)
-        }
+    // 🔹 Prevent duplicate navigation calls
+    private fun NavController.navigateSafely(destinationId: Int) {
+        if (currentDestination?.id != destinationId) navigate(destinationId)
     }
-
-
-
 }

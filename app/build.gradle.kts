@@ -111,6 +111,11 @@ dependencies {
 
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
 
+    implementation ("com.google.firebase:firebase-firestore")
+    implementation ("com.google.firebase:firebase-database")
+    implementation ("com.google.firebase:firebase-auth")
+
+    implementation ("androidx.work:work-runtime-ktx:2.8.1")
 
 
 

@@ -75,5 +75,7 @@ interface FavoriteMealDao {
         deleteFavoriteMeal(mealId)
         updateMealAsNotFavorite(mealId)
     }
+
+
 }
 

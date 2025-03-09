@@ -5,19 +5,19 @@ import androidx.room.Relation
 import com.maayn.mealmate.presentation.home.model.RecipeItem
 
 data class MealWithDetails(
-    @Embedded val meal: Meal,
+    @Embedded val meal: Meal = Meal(), // Ensure default value for Firestore
 
     @Relation(
         parentColumn = "id",
         entityColumn = "mealId"
     )
-    val ingredients: List<IngredientEntity>,
+    val ingredients: List<IngredientEntity> = emptyList(), // Avoid nullability issues
 
     @Relation(
         parentColumn = "id",
         entityColumn = "mealId"
     )
-    val instructions: List<InstructionEntity>
+    val instructions: List<InstructionEntity> = emptyList() // Avoid nullability issues
 ) {
     fun toRecipeItem(): RecipeItem {
         return RecipeItem(
@@ -40,4 +40,4 @@ data class MealWithDetails(
 // Helper functions for mapping entities to domain models
 fun IngredientEntity.toDomain() = RecipeItem.Ingredient(name = this.name, measure = this.measure)
 
-fun InstructionEntity.toDomain() = RecipeItem.Instruction(step = this.step.toString())
+fun InstructionEntity.toDomain() = RecipeItem.Instruction(step = this.step) // Fix missing description mapping

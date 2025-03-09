@@ -6,11 +6,15 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "meal_plans")
 data class MealPlan(
-    @PrimaryKey(autoGenerate = true) val id: Int? = null,
-    val name: String,       // Meal plan name (e.g., "Weekly Healthy Meals")
-    val date: String?,       // Date in format "DD/MM/YYYY"
-    val mealType: String,   // Meal type (e.g., "Breakfast", "Lunch", "Dinner")
-    val recipeName: String, // Recipe name
-    val recipeImage: String, // Image URL or resource
-    val recipeId: String
-) : Serializable
+    @PrimaryKey(autoGenerate = true) var id: Int? = null,  // Room's auto-generated ID
+    var firebaseId: String? = null,  // Firestore document ID (null until Firestore assigns it)
+    var name: String = "",
+    var date: String? = "",
+    var mealType: String = "",
+    var recipeName: String = "",
+    var recipeImage: String = "",
+    var recipeId: String = ""
+) : Serializable {
+    constructor() : this(null, null, "", "", "", "", "", "")
+}
+
