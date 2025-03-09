@@ -20,7 +20,7 @@ class SplashActivity : AppCompatActivity() {
 
 
         animationView.addAnimatorUpdateListener { animation ->
-            if (animation.animatedFraction >= 0f) {
+            if (animation.animatedFraction >= 0.5f) {
                 animationView.removeAllUpdateListeners()
                 val intent = Intent(this, MainActivity::class.java)
                 startActivity(intent)
