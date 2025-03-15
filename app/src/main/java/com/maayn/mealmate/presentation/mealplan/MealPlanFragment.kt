@@ -101,4 +101,8 @@ class MealPlanFragment : Fragment() {
             null // Return null for invalid dates
         }
     }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+    }
 }

@@ -276,22 +276,6 @@
             android:nestedScrollingEnabled="false"
             app:layout_constraintTop_toBottomOf="@id/tvInstructionsTitle" />
 
-        <!-- Start Cooking Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStartCooking"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginEnd="16dp"
-            android:backgroundTint="@color/primary_color_5"
-            android:paddingVertical="12dp"
-            android:text="Start Cooking"
-            android:textAllCaps="false"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            app:cornerRadius="12dp"
-            app:layout_constraintTop_toBottomOf="@id/rvInstructions" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>
