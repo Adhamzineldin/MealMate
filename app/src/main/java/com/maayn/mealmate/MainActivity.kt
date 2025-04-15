@@ -113,20 +113,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun observeLoginState() {
 
-        FirebaseAuth.getInstance().addAuthStateListener { auth ->
+
+        val authListener = FirebaseAuth.AuthStateListener { auth ->
             val user = auth.currentUser
             if (user != null) {
                 syncDataFromFirestore()
             }
         }
-//        val authListener = FirebaseAuth.AuthStateListener { auth ->
-//            val user = auth.currentUser
-//            if (user != null) {
-//                syncDataFromFirestore()
-//            }
-//        }
-//
-//        firebaseAuth.addAuthStateListener(authListener)
+
+        firebaseAuth.addAuthStateListener(authListener)
     }
 
     private suspend fun getCurrentUserId(): String? {
@@ -160,14 +155,12 @@ class MainActivity : AppCompatActivity() {
             val mealOfTheDayDao = db.mealOfTheDayDao()
             val shoppingItemDao = db.shoppingItemDao()
 
-            val userID = getCurrentUserId()
-
-            val syncingMealDao = SyncingMealDao(mealDao, firestore,userID )
-            val syncingFavoriteMealDao = SyncingFavoriteMealDao(favoriteMealDao, firestore, userID)
-            val syncingMealPlanDao = SyncingMealPlanDao(mealPlanDao, firestore, userID)
-            val syncingIngredientDao = SyncingIngredientDao(ingredientDao, firestore, userID)
+            val syncingMealDao = SyncingMealDao(mealDao, firestore)
+            val syncingFavoriteMealDao = SyncingFavoriteMealDao(favoriteMealDao, firestore)
+            val syncingMealPlanDao = SyncingMealPlanDao(mealPlanDao, firestore)
+            val syncingIngredientDao = SyncingIngredientDao(ingredientDao, firestore)
             val syncingMealOfTheDayDao = SyncingMealOfTheDayDao(mealOfTheDayDao, firestore)
-            val syncingShoppingItemDao = SyncingShoppingItemDao(shoppingItemDao, firestore, userID)
+            val syncingShoppingItemDao = SyncingShoppingItemDao(shoppingItemDao, firestore)
 
             // Sync all DAOs from Firestore to Room
             syncingMealDao.syncFromFirebase()
