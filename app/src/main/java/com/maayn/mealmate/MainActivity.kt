@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
@@ -34,6 +35,7 @@ import com.maayn.mealmate.presentation.splash.LoadingFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
@@ -110,14 +112,35 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun observeLoginState() {
-        val authListener = FirebaseAuth.AuthStateListener { auth ->
+
+        FirebaseAuth.getInstance().addAuthStateListener { auth ->
             val user = auth.currentUser
             if (user != null) {
                 syncDataFromFirestore()
             }
         }
+//        val authListener = FirebaseAuth.AuthStateListener { auth ->
+//            val user = auth.currentUser
+//            if (user != null) {
+//                syncDataFromFirestore()
+//            }
+//        }
+//
+//        firebaseAuth.addAuthStateListener(authListener)
+    }
 
-        firebaseAuth.addAuthStateListener(authListener)
+    private suspend fun getCurrentUserId(): String? {
+        return try {
+            // Force refresh the auth state
+            FirebaseAuth.getInstance().currentUser?.run {
+                // Reload to ensure fresh data
+                reload().await()
+                uid
+            }
+        } catch (e: Exception) {
+            Log.e("Auth", "Error refreshing user: ${e.message}")
+            null
+        }
     }
 
 
@@ -137,12 +160,14 @@ class MainActivity : AppCompatActivity() {
             val mealOfTheDayDao = db.mealOfTheDayDao()
             val shoppingItemDao = db.shoppingItemDao()
 
-            val syncingMealDao = SyncingMealDao(mealDao, firestore)
-            val syncingFavoriteMealDao = SyncingFavoriteMealDao(favoriteMealDao, firestore)
-            val syncingMealPlanDao = SyncingMealPlanDao(mealPlanDao, firestore)
-            val syncingIngredientDao = SyncingIngredientDao(ingredientDao, firestore)
+            val userID = getCurrentUserId()
+
+            val syncingMealDao = SyncingMealDao(mealDao, firestore,userID )
+            val syncingFavoriteMealDao = SyncingFavoriteMealDao(favoriteMealDao, firestore, userID)
+            val syncingMealPlanDao = SyncingMealPlanDao(mealPlanDao, firestore, userID)
+            val syncingIngredientDao = SyncingIngredientDao(ingredientDao, firestore, userID)
             val syncingMealOfTheDayDao = SyncingMealOfTheDayDao(mealOfTheDayDao, firestore)
-            val syncingShoppingItemDao = SyncingShoppingItemDao(shoppingItemDao, firestore)
+            val syncingShoppingItemDao = SyncingShoppingItemDao(shoppingItemDao, firestore, userID)
 
             // Sync all DAOs from Firestore to Room
             syncingMealDao.syncFromFirebase()

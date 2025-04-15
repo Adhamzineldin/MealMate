@@ -21,7 +21,6 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.maayn.mealmate.R
 import com.maayn.mealmate.core.utils.MealNotificationWorker
-import com.maayn.mealmate.core.utils.NotificationReceiver
 import com.maayn.mealmate.data.local.database.AppDatabase
 import com.maayn.mealmate.data.local.entities.MealPlan
 import com.maayn.mealmate.data.local.entities.ShoppingItem
@@ -78,7 +77,7 @@ class MealPlanAdapter(
             }
 
             ivNotification.setOnClickListener {
-                val mealDateString = mealPlan.date // Should be "21/03/2025 17:22"
+                val mealDateString = mealPlan.date // e.g. "21/03/2025 17:22"
                 val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
 
                 try {
@@ -96,7 +95,12 @@ class MealPlanAdapter(
 
                     val workRequest = OneTimeWorkRequestBuilder<MealNotificationWorker>()
                         .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
-                        .setInputData(workDataOf("mealName" to mealPlan.name))
+                        .setInputData(
+                            workDataOf(
+                                "mealName" to mealPlan.name,
+                                "mealTimeMillis" to mealDate.time
+                            )
+                        )
                         .build()
 
                     WorkManager.getInstance(context).enqueue(workRequest)
@@ -107,6 +111,7 @@ class MealPlanAdapter(
                     Toast.makeText(context, "Invalid meal date format", Toast.LENGTH_SHORT).show()
                 }
             }
+
 
 
             ivDelete.setOnClickListener {
