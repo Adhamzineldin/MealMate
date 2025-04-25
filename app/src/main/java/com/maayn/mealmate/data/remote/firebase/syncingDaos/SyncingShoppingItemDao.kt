@@ -4,119 +4,83 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.maayn.mealmate.data.local.dao.ShoppingItemDao
 import com.maayn.mealmate.data.local.entities.ShoppingItem
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class SyncingShoppingItemDao(
     private val shoppingItemDao: ShoppingItemDao,
     private val firestore: FirebaseFirestore,
-    private val userId: String? = FirebaseAuth.getInstance().currentUser?.uid
+    private val userId: String? = FirebaseAuth.getInstance().currentUser?.uid // Default to current user if null
+
 ) : ShoppingItemDao {
 
     private fun userShoppingItemsCollection() =
-        firestore.collection("users").document(userId ?: "").collection("shopping_items")
+        firestore.collection("users").document(userId.toString()).collection("shopping_items")
 
+    // 🔹 **INSERT ITEM**
     override suspend fun insert(item: ShoppingItem) {
-        // Save locally first
-        shoppingItemDao.insert(item)
+        shoppingItemDao.insert(item) // ✅ Save locally
 
-        // Then sync to Firebase
-        withContext(Dispatchers.IO) {
-            try {
-                userShoppingItemsCollection().document(item.id).set(item).await()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        CoroutineScope(Dispatchers.IO).launch {
+            userShoppingItemsCollection().document(item.id).set(item)
         }
     }
 
+    // 🔹 **DELETE ITEM**
     override suspend fun delete(item: ShoppingItem) {
-        // Delete locally first
-        shoppingItemDao.delete(item)
+        shoppingItemDao.delete(item) // ✅ Delete locally
 
-        // Then delete from Firebase
-        withContext(Dispatchers.IO) {
-            try {
-                userShoppingItemsCollection().document(item.id).delete().await()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        CoroutineScope(Dispatchers.IO).launch {
+            userShoppingItemsCollection().document(item.id).delete()
         }
     }
 
+    // 🔹 **GET ALL ITEMS**
     override suspend fun getAll(): List<ShoppingItem> {
-        try {
-            // Get from Firebase first to ensure we have latest data
-            val snapshot = userShoppingItemsCollection().get().await()
-            val items = snapshot.toObjects(ShoppingItem::class.java)
+        val snapshot = userShoppingItemsCollection().get().await()
+        val items = snapshot.toObjects(ShoppingItem::class.java)
 
-            // Store items locally if we have any
-            if (items.isNotEmpty()) {
-                withContext(Dispatchers.IO) {
-                    items.forEach { shoppingItemDao.insert(it) }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // On Firebase failure, fall back to local data
-        }
+        // Store items locally
+        items.forEach { shoppingItemDao.insert(it) }
 
-        // Return local data
         return shoppingItemDao.getAll()
     }
 
+    // 🔹 **DELETE ALL ITEMS**
     override suspend fun deleteAll() {
-        // Delete locally first
-        shoppingItemDao.deleteAll()
+        shoppingItemDao.deleteAll() // ✅ Delete locally
 
-        // Then delete from Firebase
-        withContext(Dispatchers.IO) {
-            try {
-                val batch = firestore.batch()
-                val documents = userShoppingItemsCollection().get().await().documents
-
-                documents.forEach {
-                    batch.delete(it.reference)
-                }
-
-                if (documents.isNotEmpty()) {
-                    batch.commit().await()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+        CoroutineScope(Dispatchers.IO).launch {
+            userShoppingItemsCollection().get().await().documents.forEach {
+                it.reference.delete()
             }
         }
     }
 
+    // 🔹 **UPDATE ITEM**
     override suspend fun update(item: ShoppingItem) {
-        // Update locally first
-        shoppingItemDao.update(item)
+        shoppingItemDao.update(item) // ✅ Update locally
 
-        // Then update in Firebase
-        withContext(Dispatchers.IO) {
-            try {
-                userShoppingItemsCollection().document(item.id).set(item).await()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        CoroutineScope(Dispatchers.IO).launch {
+            userShoppingItemsCollection().document(item.id).set(item)
         }
     }
 
+    // 🔹 **SYNC ITEMS FROM FIREBASE**
     suspend fun syncFromFirebase() {
-        withContext(Dispatchers.IO) {
-            try {
-                val snapshot = userShoppingItemsCollection().get().await()
-                val items = snapshot.documents.mapNotNull {
-                    it.toObject(ShoppingItem::class.java)
-                }
-
-                if (items.isNotEmpty()) {
-                    items.forEach { shoppingItemDao.insert(it) }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+        try {
+            val snapshot = userShoppingItemsCollection().get().await()
+            val items: List<ShoppingItem> = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(ShoppingItem::class.java)
             }
+
+            if (items.isNotEmpty()) {
+                items.forEach { shoppingItemDao.insert(it) }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

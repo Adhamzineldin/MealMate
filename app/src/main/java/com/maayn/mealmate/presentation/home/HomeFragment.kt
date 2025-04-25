@@ -340,32 +340,38 @@ class HomeFragment : Fragment() {
 
 
 
+    // In HomeFragment.kt - replace fetchTrendingRecipes and fetchRecipesForCategory with:
     private fun fetchTrendingRecipes() {
-        lifecycleScope.launch {
-            try {
-                // Fetch categories
-                val categoryResponse = RetrofitClient.apiService.getMealCategories()
-                val categories = categoryResponse.categories
+        viewModel = ViewModelProvider(this)[HomeViewModel::class.java]
 
-                if (categories.isNotEmpty()) {
-                    val randomCategory = categories.random().strCategory
-                    // Fetch recipes for the selected category
-                    Log.i("HomeFragment", "Selected category: $randomCategory")
-                    fetchRecipesForCategory(randomCategory)
-                } else {
-                    handleFailure("No categories found.")
-                }
-            } catch (e: Exception) {
-                Log.e("HomeFragment", "Selected category: ${e.message}")
-                handleFailure("Failure: ${e.localizedMessage}")
+        // Observe trending recipes
+        viewModel.trendingRecipes.observe(viewLifecycleOwner) { recipes ->
+            binding.rvTrendingRecipes.apply {
+                layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+                adapter = RecipesAdapter(
+                    requireContext(),
+                    viewLifecycleOwner.lifecycleScope,
+                    recipes,
+                    onRecipeClick = { recipe ->
+                        val action = HomeFragmentDirections.actionHomeFragmentToRecipeDetailsFragment(recipe.id)
+                        findNavController().navigate(action)
+                    },
+                    onCreateMealPlanButtonClick = { mealPlan ->
+                        val action = HomeFragmentDirections.actionHomeFragmentToCreateMealPlanFragment(mealPlan)
+                        findNavController().navigate(action)
+                    }
+                )
             }
         }
+
+        // Trigger the fetch
+        viewModel.fetchTrendingRecipes()
     }
 
 
 
     private fun fetchRecipesForCategory(category: String) {
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 // First API Call: Get meals for the category
                 val response = RetrofitClient.apiService.getMealsForCategory(category)
@@ -374,53 +380,65 @@ class HomeFragment : Fragment() {
 
                 val recipeItems = mutableListOf<RecipeItem>()
 
-                response.meals?.take(10)?.forEach { meal ->
-                    // Second API Call: Get full meal details using meal ID
-                    val mealDetailsResponse = RetrofitClient.apiService.getMealDetails(meal.id)
+                // Get all meal IDs first
+                val mealIds = response.meals?.take(10)?.map { it.id } ?: emptyList()
 
-                    // If the response is valid, extract full details
-                    mealDetailsResponse.meals?.firstOrNull()?.let { detailedMeal ->
-                        val recipeItem = RecipeItem(
-                            id = detailedMeal.id,
-                            name = detailedMeal.name,
-                            category = category,
-                            area = detailedMeal.area ?: "Unknown",
-                            instructions = detailedMeal.extractInstructions(),
-                            imageUrl = detailedMeal.imageUrl,
-                            youtubeUrl = detailedMeal.youtubeUrl ?: "",
-                            ingredients = detailedMeal.extractIngredients(),
-                            isFavorited = false
-                        )
+                // Use a suspending function to fetch all details concurrently
+                mealIds.forEach { mealId ->
+                    try {
+                        // Get meal details
+                        val mealDetailsResponse = RetrofitClient.apiService.getMealDetails(mealId)
 
-                        mealDao.insertMealWithDetails(recipeItem.toMealWithDetails())
-                        Log.e("DATABASE_TAG", "Recipe Item: ${recipeItem.toMealWithDetails()}")
+                        // Process the response
+                        mealDetailsResponse.meals?.firstOrNull()?.let { detailedMeal ->
+                            val recipeItem = RecipeItem(
+                                id = detailedMeal.id,
+                                name = detailedMeal.name,
+                                category = category,
+                                area = detailedMeal.area ?: "Unknown",
+                                instructions = detailedMeal.extractInstructions(),
+                                imageUrl = detailedMeal.imageUrl,
+                                youtubeUrl = detailedMeal.youtubeUrl ?: "",
+                                ingredients = detailedMeal.extractIngredients(),
+                                isFavorited = false
+                            )
 
-                        recipeItems.add(recipeItem)
+                            // Add to our list
+                            recipeItems.add(recipeItem)
+
+                            // Save to database
+                            mealDao.insertMealWithDetails(recipeItem.toMealWithDetails())
+                        }
+                    } catch (e: Exception) {
+                        Log.e("HomeFragment", "Error fetching meal details: ${e.localizedMessage}")
                     }
                 }
 
-                // Update RecyclerView
-                binding.rvTrendingRecipes.apply {
-                    layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-                    adapter = RecipesAdapter(
-                        requireContext(),
-                        viewLifecycleOwner.lifecycleScope,
-                        recipeItems,
-                        onRecipeClick = { recipe ->
-                            val action = HomeFragmentDirections.actionHomeFragmentToRecipeDetailsFragment(recipe.id)
-                            findNavController().navigate(action)
-                        },
-                        onCreateMealPlanButtonClick = { mealPlan ->
-                            val action = HomeFragmentDirections.actionHomeFragmentToCreateMealPlanFragment(mealPlan)
-                            findNavController().navigate(action)
-                        }
-                    )
-
+                // Switch to main thread to update UI
+                lifecycleScope.launch(Dispatchers.Main) {
+                    binding.rvTrendingRecipes.apply {
+                        layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+                        adapter = RecipesAdapter(
+                            requireContext(),
+                            viewLifecycleOwner.lifecycleScope,
+                            recipeItems,
+                            onRecipeClick = { recipe ->
+                                val action = HomeFragmentDirections.actionHomeFragmentToRecipeDetailsFragment(recipe.id)
+                                findNavController().navigate(action)
+                            },
+                            onCreateMealPlanButtonClick = { mealPlan ->
+                                val action = HomeFragmentDirections.actionHomeFragmentToCreateMealPlanFragment(mealPlan)
+                                findNavController().navigate(action)
+                            }
+                        )
+                    }
                 }
 
             } catch (e: Exception) {
                 Log.e("HomeFragment", "Error fetching recipes: ${e.localizedMessage}", e)
-                handleFailure("Failed to load recipes: ${e.localizedMessage}")
+                lifecycleScope.launch(Dispatchers.Main) {
+                    handleFailure("Failed to load recipes: ${e.localizedMessage}")
+                }
             }
         }
     }

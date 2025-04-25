@@ -15,6 +15,7 @@ import com.maayn.mealmate.data.remote.api.RetrofitClient
 import com.maayn.mealmate.presentation.home.model.RecipeItem
 import com.maayn.mealmate.presentation.home.model.toMealWithDetails
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -70,6 +71,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         } as MealWithDetails?
     }
 
+
+
+
+
     private suspend fun fetchMealFromApi(today: String): MealWithDetails? {
         return try {
             val response = withContext(Dispatchers.IO) { RetrofitClient.apiService.getMealOfTheDay() }
@@ -120,5 +125,75 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         } as MealWithDetails?
     }
 
+
+
+    private val _trendingRecipes = MutableLiveData<List<RecipeItem>>()
+    val trendingRecipes: LiveData<List<RecipeItem>> get() = _trendingRecipes
+
+    private val apiService = RetrofitClient.apiService
+    private val db = AppDatabase.getInstance(application)
+
+
+
+    fun fetchTrendingRecipes() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Get categories
+                val categoryResponse = apiService.getMealCategories()
+                val randomCategory = categoryResponse.categories.random().strCategory
+
+                // Get meals for category
+                val mealsResponse = apiService.getMealsForCategory(randomCategory)
+                val mealIds = mealsResponse.meals?.take(10)?.map { it.id } ?: emptyList()
+
+                // Results list
+                val recipeItems = mutableListOf<RecipeItem>()
+
+                // Process each meal in parallel
+                val jobs = mealIds.map { mealId ->
+                    viewModelScope.async(Dispatchers.IO) {
+                        try {
+                            val mealDetailsResponse = apiService.getMealDetails(mealId)
+                            mealDetailsResponse.meals?.firstOrNull()?.let { detailedMeal ->
+                                RecipeItem(
+                                    id = detailedMeal.id,
+                                    name = detailedMeal.name,
+                                    category = randomCategory,
+                                    area = detailedMeal.area ?: "Unknown",
+                                    instructions = detailedMeal.extractInstructions(),
+                                    imageUrl = detailedMeal.imageUrl,
+                                    youtubeUrl = detailedMeal.youtubeUrl ?: "",
+                                    ingredients = detailedMeal.extractIngredients(),
+                                    isFavorited = false,
+                                    time = "${(10..60).random()} min",
+                                    rating = (3..5).random().toFloat(),
+                                    ratingCount = (10..500).random()
+                                )
+                            }
+                        } catch (e: Exception) {
+                            Log.e("HomeViewModel", "Error fetching meal details: ${e.message}")
+                            null
+                        }
+                    }
+                }
+
+                // Wait for all jobs to complete
+                jobs.forEach { job ->
+                    job.await()?.let { recipe ->
+                        recipeItems.add(recipe)
+                        // Insert into database in background
+                        mealDao.insertMealWithDetails(recipe.toMealWithDetails())
+                    }
+                }
+
+                // Update LiveData
+                _trendingRecipes.postValue(recipeItems)
+
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error fetching trending recipes: ${e.message}")
+                _trendingRecipes.postValue(emptyList())
+            }
+        }
+    }
 
 }

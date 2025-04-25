@@ -9,71 +9,54 @@ import com.google.firebase.firestore.SetOptions
 import com.maayn.mealmate.data.local.dao.MealPlanDao
 import com.maayn.mealmate.data.local.entities.MealPlan
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-private const val TAG = "SyncingMealPlanDao"
-
 class SyncingMealPlanDao(
     private val mealPlanDao: MealPlanDao,
     private val firestore: FirebaseFirestore,
-    private val userId: String? = FirebaseAuth.getInstance().currentUser?.uid
+    private val userId: String? = FirebaseAuth.getInstance().currentUser?.uid // Default to current user if null
+
 ) : MealPlanDao {
 
     private fun userMealPlansCollection() =
-        firestore.collection("users").document(userId ?: "").collection("meal_plans")
+        firestore.collection("users").document(userId.toString()).collection("meal_plans")
 
+    // 🔹 **INSERT MEAL PLAN**
     override suspend fun insertMealPlan(mealPlan: MealPlan) {
-        // Generate Firebase ID if none exists
         if (mealPlan.firebaseId == null) {
-            mealPlan.firebaseId = userMealPlansCollection().document().id
+            mealPlan.firebaseId = userMealPlansCollection().document().id // ✅ Ensure Firestore ID
         }
 
-        // Save locally first
-        mealPlanDao.insertMealPlan(mealPlan)
+        mealPlanDao.insertMealPlan(mealPlan) // ✅ Save locally
 
-        // Then sync to Firebase
-        withContext(Dispatchers.IO) {
-            try {
-                userMealPlansCollection().document(mealPlan.firebaseId!!).set(mealPlan).await()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error inserting meal plan", e)
-            }
+        CoroutineScope(Dispatchers.IO).launch {
+            userMealPlansCollection().document(mealPlan.firebaseId!!).set(mealPlan)
         }
     }
 
+    // 🔹 **GET ALL MEAL PLANS**
     override fun getAllMealPlans(): LiveData<List<MealPlan>> {
-        // Trigger sync if local data is empty
         return mealPlanDao.getAllMealPlans().map { localMealPlans ->
             if (localMealPlans.isEmpty()) {
-                // Launch a coroutine to call the suspend function
-                CoroutineScope(Dispatchers.IO).launch {
-                    syncMealPlansFromFirebase()
-                }
-                localMealPlans // Return value for the if branch
-            } else {
-                localMealPlans // Return value for the else branch
+                CoroutineScope(Dispatchers.IO).launch { syncMealPlansFromFirebase() }
             }
+            localMealPlans
         }
     }
 
+    // 🔹 **GET UPCOMING MEAL PLANS**
     override fun getUpcomingMealPlans(today: String): LiveData<List<MealPlan>> {
-        // Trigger sync if local data is empty
         return mealPlanDao.getUpcomingMealPlans(today).map { localMealPlans ->
             if (localMealPlans.isEmpty()) {
-                // Launch a coroutine to call the suspend function
-                CoroutineScope(Dispatchers.IO).launch {
-                    syncMealPlansFromFirebase()
-                }
-                localMealPlans // Return value for the if branch
-            } else {
-                localMealPlans // Return value for the else branch
+                CoroutineScope(Dispatchers.IO).launch { syncMealPlansFromFirebase() }
             }
+            localMealPlans
         }
     }
 
+    // 🔹 **GET MEAL PLAN BY ID**
     override suspend fun getMealPlanById(id: Int?): MealPlan? {
         return mealPlanDao.getMealPlanById(id)
     }
@@ -82,59 +65,46 @@ class SyncingMealPlanDao(
         return mealPlanDao.getMealPlanByFirebaseId(firebaseId)
     }
 
+    // 🔹 **UPDATE MEAL PLAN**
     override suspend fun updateMealPlan(mealPlan: MealPlan) {
-        // Update locally first
-        mealPlanDao.updateMealPlan(mealPlan)
+        mealPlanDao.updateMealPlan(mealPlan) // ✅ Update locally
 
-        // Then update in Firebase
         mealPlan.firebaseId?.let { firebaseId ->
-            withContext(Dispatchers.IO) {
-                try {
-                    userMealPlansCollection()
-                        .document(firebaseId)
-                        .set(mealPlan, SetOptions.merge())
-                        .await()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error updating meal plan", e)
-                }
+            CoroutineScope(Dispatchers.IO).launch {
+                userMealPlansCollection()
+                    .document(firebaseId)
+                    .set(mealPlan, SetOptions.merge()) // ✅ Merge instead of overwrite
             }
         }
     }
 
+    // 🔹 **DELETE MEAL PLAN**
     override suspend fun deleteMealPlan(mealPlan: MealPlan) {
-        // Delete locally first
-        mealPlanDao.deleteMealPlan(mealPlan)
+        mealPlanDao.deleteMealPlan(mealPlan) // ✅ Delete locally
 
-        // Then delete from Firebase
         mealPlan.firebaseId?.let { firebaseId ->
-            withContext(Dispatchers.IO) {
-                try {
-                    userMealPlansCollection().document(firebaseId).delete().await()
-                    Log.i(TAG, "Deleted meal plan from Firebase: $firebaseId")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error deleting meal plan from Firebase", e)
-                }
+            try {
+                userMealPlansCollection().document(firebaseId).delete().await()
+                Log.i("SyncingMealPlanDao", "Deleted meal plan from Firebase: $firebaseId")
+            } catch (e: Exception) {
+                Log.e("SyncingMealPlanDao", "Error deleting meal plan from Firebase", e)
             }
         }
     }
 
+    // 🔹 **SYNC MEAL PLANS FROM FIREBASE TO ROOM**
     suspend fun syncMealPlansFromFirebase() {
-        withContext(Dispatchers.IO) {
-            try {
-                val snapshot = userMealPlansCollection().get().await()
-                val mealPlans = snapshot.toObjects(MealPlan::class.java)
+        try {
+            val snapshot = userMealPlansCollection().get().await()
+            val mealPlans = snapshot.toObjects(MealPlan::class.java)
 
-                if (mealPlans.isNotEmpty()) {
-                    Log.i(TAG, "Syncing ${mealPlans.size} meal plans from Firebase")
-                    mealPlans.forEach { mealPlan ->
-                        mealPlanDao.insertMealPlan(mealPlan)
-                    }
-                } else {
-                    Log.i(TAG, "No meal plans found in Firebase")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error syncing meal plans from Firebase", e)
+            Log.i("MealPlanDao", "Syncing ${mealPlans.size} meal plans from Firebase")
+
+            mealPlans.forEach { mealPlan ->
+                mealPlanDao.insertMealPlan(mealPlan)
             }
+        } catch (e: Exception) {
+            Log.e("SyncingMealPlanDao", "Error syncing meal plans from Firebase", e)
         }
     }
 }

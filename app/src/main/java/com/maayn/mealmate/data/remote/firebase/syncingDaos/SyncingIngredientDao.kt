@@ -4,73 +4,59 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.maayn.mealmate.data.local.dao.IngredientDao
 import com.maayn.mealmate.data.local.entities.Ingredient
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class SyncingIngredientDao(
     private val ingredientDao: IngredientDao,
     private val firestore: FirebaseFirestore,
-    private val userId: String? = FirebaseAuth.getInstance().currentUser?.uid
+    private val userId: String? = FirebaseAuth.getInstance().currentUser?.uid // Default to current user if null
+
 ) : IngredientDao {
 
     private fun userIngredientsCollection() =
-        firestore.collection("users").document(userId ?: "").collection("ingredients")
+        firestore.collection("users").document(userId.toString()).collection("ingredients")
 
     override suspend fun insertIngredient(ingredient: Ingredient) {
-        // Save locally first
-        ingredientDao.insertIngredient(ingredient)
+        ingredientDao.insertIngredient(ingredient) // Save locally
 
-        // Then sync to Firebase on the IO dispatcher without creating a new scope
-        withContext(Dispatchers.IO) {
-            try {
-                userIngredientsCollection().document(ingredient.id).set(ingredient).await()
-            } catch (e: Exception) {
-                // Log error but don't crash
-                e.printStackTrace()
-            }
+        CoroutineScope(Dispatchers.IO).launch {
+            userIngredientsCollection().document(ingredient.id).set(ingredient) // ✅ Store under user
         }
     }
 
     override suspend fun insertIngredients(ingredients: List<Ingredient>) {
-        // Save locally first
-        ingredientDao.insertIngredients(ingredients)
+        ingredientDao.insertIngredients(ingredients) // Save locally
 
-        // Then batch upload to Firebase
-        withContext(Dispatchers.IO) {
-            try {
-                // Only proceed if there are ingredients to upload
-                if (ingredients.isNotEmpty()) {
-                    val batch = firestore.batch()
-                    ingredients.forEach { ingredient ->
-                        val docRef = userIngredientsCollection().document(ingredient.id)
-                        batch.set(docRef, ingredient)
-                    }
-                    batch.commit().await()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+        CoroutineScope(Dispatchers.IO).launch {
+            val batch = firestore.batch()
+            ingredients.forEach { ingredient ->
+                val docRef = userIngredientsCollection().document(ingredient.id)
+                batch.set(docRef, ingredient)
             }
+            batch.commit() // ✅ Batch insert per user
         }
     }
 
     override suspend fun getAllIngredients(): List<Ingredient> {
-        return ingredientDao.getAllIngredients()
+        return ingredientDao.getAllIngredients() // Fetch locally
     }
 
     suspend fun syncFromFirebase() {
-        withContext(Dispatchers.IO) {
-            try {
-                val snapshot = userIngredientsCollection().get().await()
-                val ingredients = snapshot.documents.mapNotNull { it.toObject(Ingredient::class.java) }
-
-                // Only insert if we have data to avoid unnecessary operations
-                if (ingredients.isNotEmpty()) {
-                    ingredientDao.insertIngredients(ingredients)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+        try {
+            // ✅ Fetch only ingredients for the authenticated user
+            val snapshot = userIngredientsCollection().get().await()
+            val ingredients: List<Ingredient> = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Ingredient::class.java)
             }
+
+            if (ingredients.isNotEmpty()) {
+                ingredientDao.insertIngredients(ingredients) // ✅ Insert locally
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
