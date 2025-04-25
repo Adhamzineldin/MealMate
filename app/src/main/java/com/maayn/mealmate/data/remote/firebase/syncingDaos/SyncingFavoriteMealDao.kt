@@ -1,6 +1,5 @@
 package com.maayn.mealmate.data.remote.firebase.syncingDaos
 
-import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.maayn.mealmate.data.local.dao.FavoriteMealDao
@@ -9,26 +8,30 @@ import com.maayn.mealmate.data.local.entities.IngredientEntity
 import com.maayn.mealmate.data.local.entities.InstructionEntity
 import com.maayn.mealmate.data.local.entities.Meal
 import com.maayn.mealmate.data.local.entities.MealWithDetails
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class SyncingFavoriteMealDao(
     private val favoriteMealDao: FavoriteMealDao,
     private val firestore: FirebaseFirestore,
     private val userId: String? = FirebaseAuth.getInstance().currentUser?.uid
-
 ) : FavoriteMealDao {
 
     private fun userMealsCollection() =
-        firestore.collection("users").document(userId.toString()).collection("favorite_meals")
+        firestore.collection("users").document(userId ?: "").collection("favorite_meals")
 
     override suspend fun insertMeal(meal: Meal) {
-        favoriteMealDao.insertMeal(meal) // Save locally
+        // Save locally first
+        favoriteMealDao.insertMeal(meal)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            userMealsCollection().document(meal.id).set(meal) // ✅ Store under user
+        // Then sync to Firebase
+        withContext(Dispatchers.IO) {
+            try {
+                userMealsCollection().document(meal.id).set(meal).await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -41,22 +44,30 @@ class SyncingFavoriteMealDao(
     }
 
     override suspend fun insertFavoriteMeal(favoriteMeal: FavoriteMeal) {
-        favoriteMealDao.insertFavoriteMeal(favoriteMeal) // Save locally
+        // Save locally first
+        favoriteMealDao.insertFavoriteMeal(favoriteMeal)
 
-        try {
-            // Correctly store the favorite meal as a document inside the 'favorite_meals' collection
-            userMealsCollection().document(favoriteMeal.id).set(favoriteMeal).await()
-        } catch (e: Exception) {
-            // Handle any errors during the Firestore operation
-            e.printStackTrace()
+        // Then sync to Firebase
+        withContext(Dispatchers.IO) {
+            try {
+                userMealsCollection().document(favoriteMeal.id).set(favoriteMeal).await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     override suspend fun updateMeal(meal: Meal) {
+        // Update locally first
         favoriteMealDao.updateMeal(meal)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            userMealsCollection().document(meal.id).set(meal) // ✅ Update under user
+        // Then update in Firebase
+        withContext(Dispatchers.IO) {
+            try {
+                userMealsCollection().document(meal.id).set(meal).await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -69,26 +80,44 @@ class SyncingFavoriteMealDao(
     }
 
     override suspend fun updateFavoriteMeal(favoriteMeal: FavoriteMeal) {
+        // Update locally first
         favoriteMealDao.updateFavoriteMeal(favoriteMeal)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            userMealsCollection().document(favoriteMeal.id).set(favoriteMeal) // ✅ Update under user
+        // Then update in Firebase
+        withContext(Dispatchers.IO) {
+            try {
+                userMealsCollection().document(favoriteMeal.id).set(favoriteMeal).await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     override suspend fun insertMealWithDetails(mealWithDetails: MealWithDetails) {
+        // Insert locally first
         favoriteMealDao.insertMealWithDetails(mealWithDetails)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            userMealsCollection().document(mealWithDetails.meal.id).set(mealWithDetails)
+        // Then sync to Firebase
+        withContext(Dispatchers.IO) {
+            try {
+                userMealsCollection().document(mealWithDetails.meal.id).set(mealWithDetails).await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     override suspend fun updateMealWithDetails(mealWithDetails: MealWithDetails) {
+        // Update locally first
         favoriteMealDao.updateMealWithDetails(mealWithDetails)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            userMealsCollection().document(mealWithDetails.meal.id).set(mealWithDetails)
+        // Then update in Firebase
+        withContext(Dispatchers.IO) {
+            try {
+                userMealsCollection().document(mealWithDetails.meal.id).set(mealWithDetails).await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -101,10 +130,16 @@ class SyncingFavoriteMealDao(
     }
 
     override suspend fun deleteFavoriteMeal(mealId: String) {
+        // Delete locally first
         favoriteMealDao.deleteFavoriteMeal(mealId)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            userMealsCollection().document(mealId).delete() // ✅ Delete only for the user
+        // Then delete from Firebase
+        withContext(Dispatchers.IO) {
+            try {
+                userMealsCollection().document(mealId).delete().await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -113,45 +148,39 @@ class SyncingFavoriteMealDao(
     }
 
     override suspend fun removeFromFavorites(mealId: String) {
+        // Remove locally first
         favoriteMealDao.removeFromFavorites(mealId)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            userMealsCollection().document(mealId).delete()
+        // Then remove from Firebase
+        withContext(Dispatchers.IO) {
+            try {
+                userMealsCollection().document(mealId).delete().await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     suspend fun syncFromFirebase() {
-        try {
-            // ✅ Fetch only the authenticated user's favorite meals
-            val favoriteMealSnapshot = userMealsCollection().get().await()
-            val favoriteMeals: List<FavoriteMeal> = favoriteMealSnapshot.documents.mapNotNull { doc ->
-                Log.d("SyncingFavoriteMealDao", "Syncing favorite meal with ID: ${doc.id}")
-                FavoriteMeal(id = doc.get("id").toString())
-            }
+        withContext(Dispatchers.IO) {
+            try {
+                val favoriteMealSnapshot = userMealsCollection().get().await()
+                val favoriteMeals = favoriteMealSnapshot.documents.mapNotNull {
+                    // Convert to FavoriteMeal object
+                    val meal = it.toObject(FavoriteMeal::class.java)
 
-            // ✅ Insert favorite meals into local database
-            favoriteMeals.forEachIndexed { index, favoriteMeal ->
-                // Log the current meal ID for debugging
-                Log.d("SyncingFavoriteMealDao", "Inserting favorite meal with ID: ${favoriteMeal.id}")
-
-                // Check if it's not the last item in the list
-                if (index != favoriteMeals.size - 1) {
-                    // Insert only if the ID is valid (non-null, non-empty, and exactly 5 characters long)
-                    if (!favoriteMeal.id.isNullOrEmpty() && favoriteMeal.id.length == 5) {
-                        favoriteMealDao.insertFavoriteMeal(favoriteMeal)
-                    } else {
-                        Log.d("SyncingFavoriteMealDao", "Skipping meal with invalid ID: ${favoriteMeal.id}")
-                    }
-                } else {
-                    // Log that the last item is being skipped
-                    Log.d("SyncingFavoriteMealDao", "Skipping insertion for the last meal with ID: ${favoriteMeal.id}")
+                    // Only return valid meals (with at least an ID)
+                    if (meal != null && meal.id.isNotEmpty()) meal else null
                 }
+
+                if (favoriteMeals.isNotEmpty()) {
+                    favoriteMeals.forEach { favoriteMeal ->
+                        favoriteMealDao.insertFavoriteMeal(favoriteMeal)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-
-
-
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 }

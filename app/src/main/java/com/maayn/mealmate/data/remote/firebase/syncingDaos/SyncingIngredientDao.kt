@@ -4,59 +4,73 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.maayn.mealmate.data.local.dao.IngredientDao
 import com.maayn.mealmate.data.local.entities.Ingredient
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class SyncingIngredientDao(
     private val ingredientDao: IngredientDao,
     private val firestore: FirebaseFirestore,
-    private val userId: String? = FirebaseAuth.getInstance().currentUser?.uid // Default to current user if null
-
+    private val userId: String? = FirebaseAuth.getInstance().currentUser?.uid
 ) : IngredientDao {
 
     private fun userIngredientsCollection() =
-        firestore.collection("users").document(userId.toString()).collection("ingredients")
+        firestore.collection("users").document(userId ?: "").collection("ingredients")
 
     override suspend fun insertIngredient(ingredient: Ingredient) {
-        ingredientDao.insertIngredient(ingredient) // Save locally
+        // Save locally first
+        ingredientDao.insertIngredient(ingredient)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            userIngredientsCollection().document(ingredient.id).set(ingredient) // ✅ Store under user
+        // Then sync to Firebase on the IO dispatcher without creating a new scope
+        withContext(Dispatchers.IO) {
+            try {
+                userIngredientsCollection().document(ingredient.id).set(ingredient).await()
+            } catch (e: Exception) {
+                // Log error but don't crash
+                e.printStackTrace()
+            }
         }
     }
 
     override suspend fun insertIngredients(ingredients: List<Ingredient>) {
-        ingredientDao.insertIngredients(ingredients) // Save locally
+        // Save locally first
+        ingredientDao.insertIngredients(ingredients)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val batch = firestore.batch()
-            ingredients.forEach { ingredient ->
-                val docRef = userIngredientsCollection().document(ingredient.id)
-                batch.set(docRef, ingredient)
+        // Then batch upload to Firebase
+        withContext(Dispatchers.IO) {
+            try {
+                // Only proceed if there are ingredients to upload
+                if (ingredients.isNotEmpty()) {
+                    val batch = firestore.batch()
+                    ingredients.forEach { ingredient ->
+                        val docRef = userIngredientsCollection().document(ingredient.id)
+                        batch.set(docRef, ingredient)
+                    }
+                    batch.commit().await()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            batch.commit() // ✅ Batch insert per user
         }
     }
 
     override suspend fun getAllIngredients(): List<Ingredient> {
-        return ingredientDao.getAllIngredients() // Fetch locally
+        return ingredientDao.getAllIngredients()
     }
 
     suspend fun syncFromFirebase() {
-        try {
-            // ✅ Fetch only ingredients for the authenticated user
-            val snapshot = userIngredientsCollection().get().await()
-            val ingredients: List<Ingredient> = snapshot.documents.mapNotNull { doc ->
-                doc.toObject(Ingredient::class.java)
-            }
+        withContext(Dispatchers.IO) {
+            try {
+                val snapshot = userIngredientsCollection().get().await()
+                val ingredients = snapshot.documents.mapNotNull { it.toObject(Ingredient::class.java) }
 
-            if (ingredients.isNotEmpty()) {
-                ingredientDao.insertIngredients(ingredients) // ✅ Insert locally
+                // Only insert if we have data to avoid unnecessary operations
+                if (ingredients.isNotEmpty()) {
+                    ingredientDao.insertIngredients(ingredients)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 }
