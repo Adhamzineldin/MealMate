@@ -1,29 +1,22 @@
 package com.maayn.mealmate.core.utils
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.ContentResolver
-import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.net.Uri
-import android.provider.CalendarContract
 import android.util.Log
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.maayn.mealmate.MainActivity
 import com.maayn.mealmate.R
-import java.util.*
-import android.os.Bundle
+
 class MealNotificationWorker(context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
     private val CHANNEL_ID = "meal_reminder_channel"
     private val NOTIFICATION_ID = 101
@@ -68,23 +61,7 @@ class MealNotificationWorker(context: Context, workerParams: WorkerParameters) :
                 Log.d("MealNotificationWorker", "Notification shown for $mealName")
             } catch (e: Exception) {
                 Log.e("MealNotificationWorker", "Failed to show notification", e)
-            }
-
-            // Add to calendar if permission available
-            try {
-                if (hasCalendarPermission()) {
-                    Log.d("MealNotificationWorker", "Calendar permission granted, adding event")
-                    val success = addMealToCalendar(mealName, mealTimeMillis)
-                    if (success) {
-                        Log.d("MealNotificationWorker", "Successfully added event to calendar")
-                    } else {
-                        Log.e("MealNotificationWorker", "Failed to add event to calendar")
-                    }
-                } else {
-                    Log.e("MealNotificationWorker", "Missing calendar permissions")
-                }
-            } catch (e: Exception) {
-                Log.e("MealNotificationWorker", "Exception when adding to calendar", e)
+                return Result.failure()
             }
 
             return Result.success()
@@ -92,13 +69,6 @@ class MealNotificationWorker(context: Context, workerParams: WorkerParameters) :
             Log.e("MealNotificationWorker", "Worker failed", e)
             return Result.failure()
         }
-    }
-
-    private fun hasCalendarPermission(): Boolean {
-        return ActivityCompat.checkSelfPermission(
-            applicationContext,
-            Manifest.permission.WRITE_CALENDAR
-        ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun showNotification(mealName: String, recipeId: String = "") {
@@ -175,137 +145,5 @@ class MealNotificationWorker(context: Context, workerParams: WorkerParameters) :
         } catch (e: SecurityException) {
             Log.e("MealNotificationWorker", "No permission to post notifications", e)
         }
-    }
-
-    public fun addMealToCalendar(mealName: String, mealTimeMillis: Long): Boolean {
-        try {
-            val calendarId = getPrimaryCalendarId()
-            if (calendarId == null) {
-                Log.e("MealNotificationWorker", "No primary calendar found")
-                return false
-            }
-
-            val startMillis = mealTimeMillis
-            val endMillis = mealTimeMillis + 60 * 60 * 1000 // 1 hour duration
-            val currentMillis = System.currentTimeMillis()
-
-            Log.d("MealNotificationWorker", "Preparing to add event: $mealName at time: $startMillis with calendarId: $calendarId")
-
-            // Check if time is in the future
-            if (startMillis <= currentMillis) {
-                Log.e("MealNotificationWorker", "Cannot add past events to calendar: $startMillis <= $currentMillis")
-                return false
-            }
-
-            // Create event with more details
-            val values = ContentValues().apply {
-                put(CalendarContract.Events.CALENDAR_ID, calendarId)
-                put(CalendarContract.Events.TITLE, "Prepare $mealName")
-                put(CalendarContract.Events.DESCRIPTION, "Meal preparation reminder from MealMate app. Take time to gather all ingredients and follow recipe instructions.")
-                put(CalendarContract.Events.EVENT_LOCATION, "Kitchen")
-                put(CalendarContract.Events.DTSTART, startMillis)
-                put(CalendarContract.Events.DTEND, endMillis)
-                put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
-                put(CalendarContract.Events.HAS_ALARM, 1)
-                put(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
-                put(CalendarContract.Events.ACCESS_LEVEL, CalendarContract.Events.ACCESS_PRIVATE)
-            }
-
-            val uri = applicationContext.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
-
-            if (uri != null) {
-                val eventId = uri.lastPathSegment?.toLong()
-                Log.d("MealNotificationWorker", "Successfully added event with ID: $eventId")
-
-                // Add multiple reminders to the event
-                if (eventId != null) {
-                    addRemindersToEvent(eventId)
-                }
-
-                // Trigger calendar sync
-                triggerCalendarSync()
-
-                return true
-            } else {
-                Log.e("MealNotificationWorker", "Failed to insert event into calendar")
-                return false
-            }
-        } catch (e: Exception) {
-            Log.e("MealNotificationWorker", "Exception when adding event to calendar", e)
-            return false
-        }
-    }
-
-    public fun addRemindersToEvent(eventId: Long) {
-        try {
-            // Add multiple reminders (15 min and 5 min before)
-            val reminderTimes = listOf(15, 5)
-
-            reminderTimes.forEach { minutes ->
-                val reminderValues = ContentValues().apply {
-                    put(CalendarContract.Reminders.EVENT_ID, eventId)
-                    put(CalendarContract.Reminders.MINUTES, minutes)
-                    put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALERT)
-                }
-
-                applicationContext.contentResolver.insert(
-                    CalendarContract.Reminders.CONTENT_URI,
-                    reminderValues
-                )
-
-                Log.d("MealNotificationWorker", "Added $minutes minute reminder to event $eventId")
-            }
-        } catch (e: Exception) {
-            Log.e("MealNotificationWorker", "Failed to add reminders to event", e)
-        }
-    }
-
-    public fun triggerCalendarSync() {
-        try {
-            // Request sync for the calendar provider
-            val authority = CalendarContract.AUTHORITY
-            ContentResolver.requestSync(null, authority, Bundle())
-            Log.d("MealNotificationWorker", "Calendar sync requested")
-        } catch (e: Exception) {
-            Log.e("MealNotificationWorker", "Failed to trigger calendar sync", e)
-        }
-    }
-
-    public fun getPrimaryCalendarId(): Long? {
-        val contentResolver: ContentResolver = applicationContext.contentResolver
-
-        // First try getting the primary calendar
-        val primaryCalendarQuery = contentResolver.query(
-            CalendarContract.Calendars.CONTENT_URI,
-            arrayOf(CalendarContract.Calendars._ID),
-            "${CalendarContract.Calendars.IS_PRIMARY}=1",
-            null,
-            null
-        )
-
-        primaryCalendarQuery?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                return cursor.getLong(0)
-            }
-        }
-
-        // If no primary calendar, get the first available calendar
-        val anyCalendarQuery = contentResolver.query(
-            CalendarContract.Calendars.CONTENT_URI,
-            arrayOf(CalendarContract.Calendars._ID),
-            "${CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL}>=#{CalendarContract.Calendars.CAL_ACCESS_CONTRIBUTOR}",
-            null,
-            CalendarContract.Calendars._ID + " ASC LIMIT 1"
-        )
-
-        anyCalendarQuery?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                return cursor.getLong(0)
-            }
-        }
-
-        // No calendars found
-        Log.e("MealNotificationWorker", "No calendars found on the device")
-        return null
     }
 }

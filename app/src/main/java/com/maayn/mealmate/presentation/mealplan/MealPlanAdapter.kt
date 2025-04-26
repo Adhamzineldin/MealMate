@@ -13,6 +13,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import androidx.work.BackoffPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -32,6 +35,8 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import androidx.work.WorkRequest
+import com.maayn.mealmate.core.utils.MealNotificationHelper
 
 class MealPlanAdapter(
     private val context: Context,
@@ -83,34 +88,56 @@ class MealPlanAdapter(
                 try {
                     val mealDate = dateFormat.parse(mealDateString) ?: return@setOnClickListener
                     val currentTimeMillis = System.currentTimeMillis()
+
+                    // Calculate one hour before meal time for notification
                     val oneHourBeforeMeal = mealDate.time - TimeUnit.HOURS.toMillis(1)
 
-                    if (currentTimeMillis >= oneHourBeforeMeal) {
-                        Toast.makeText(context, "Meal time is too close or already passed", Toast.LENGTH_SHORT).show()
+                    if (mealDate.time <= currentTimeMillis) {
+                        Toast.makeText(context, "Meal time has already passed", Toast.LENGTH_SHORT).show()
                         return@setOnClickListener
                     }
 
-                    val delayMillis = oneHourBeforeMeal - currentTimeMillis
-                    Log.e("MealPlanAdapter", "Delay: $delayMillis ms")
+                    // Create helper instance
+                    val helper = MealNotificationHelper(context)
 
-                    val workRequest = OneTimeWorkRequestBuilder<MealNotificationWorker>()
-                        .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
-                        .setInputData(
-                            workDataOf(
-                                "mealName" to mealPlan.name,
-                                "mealTimeMillis" to mealDate.time
-                            )
-                        )
-                        .build()
+                    // Immediately add to calendar with reminders
+                    val calendarSuccess = helper.addMealToCalendar(mealPlan.name, mealDate.time)
 
-                    WorkManager.getInstance(context).enqueue(workRequest)
-                    Toast.makeText(context, "Reminder set for ${mealPlan.name} one hour before meal time", Toast.LENGTH_SHORT).show()
+                    // Schedule the notification to appear 1 hour before (or immediately if less than 1 hour)
+                    val notificationTime = if (oneHourBeforeMeal > currentTimeMillis) {
+                        oneHourBeforeMeal
+                    } else {
+                        // If less than 1 hour remaining, notify right away
+                        currentTimeMillis + 5000 // 5 seconds delay to allow UI to respond first
+                    }
+
+                    helper.scheduleMealNotification(
+                        mealName = mealPlan.name,
+                        mealTimeMillis = mealDate.time,
+                        recipeId = mealPlan.recipeId,
+                        notifyAt = notificationTime
+                    )
+
+                    // Show user confirmation
+                    val calendarMessage = if (calendarSuccess) "Event added to calendar" else "Couldn't add to calendar"
+                    val notificationMessage = if (oneHourBeforeMeal > currentTimeMillis)
+                        "You'll be notified 1 hour before meal time"
+                    else
+                        "Notification set (less than 1 hour to meal time)"
+
+                    Toast.makeText(
+                        context,
+                        "Reminder set for ${mealPlan.name}\n$calendarMessage\n$notificationMessage",
+                        Toast.LENGTH_LONG
+                    ).show()
 
                 } catch (e: Exception) {
-                    Log.e("MealPlanAdapter", "Error parsing date: ${e.message}")
-                    Toast.makeText(context, "Invalid meal date format", Toast.LENGTH_SHORT).show()
+                    Log.e("MealPlanAdapter", "Error setting notification: ${e.message}")
+                    Toast.makeText(context, "Failed to set reminder: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
+
+
 
 
 
@@ -151,6 +178,17 @@ class MealPlanAdapter(
             }
 
 
+        }
+
+        // Helper function to format the time until notification in a user-friendly way
+        private fun formatTimeUntil(millis: Long): String {
+            val hours = TimeUnit.MILLISECONDS.toHours(millis)
+            val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
+
+            return when {
+                hours > 0 -> "$hours hour${if (hours > 1) "s" else ""} and $minutes minute${if (minutes > 1) "s" else ""}"
+                else -> "$minutes minute${if (minutes > 1) "s" else ""}"
+            }
         }
 
 
